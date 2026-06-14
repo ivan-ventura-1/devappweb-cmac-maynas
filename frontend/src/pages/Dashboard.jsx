@@ -10,7 +10,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const u = localStorage.getItem("usuario");
-    const token = localStorage.getItem("token");
     if (!u || u === "undefined") {
       setUsuario({ email: "cliente@cmac.com", nombre: "Cliente" });
       setUserId("a8e4b064-ca59-464e-9f69-baa40e1a529f");
@@ -37,92 +36,122 @@ export default function Dashboard() {
     window.location.href = "/";
   };
 
-  if (!usuario) return <div style={{color:"white",padding:32}}>Cargando...</div>;
+  if (!usuario) return <div style={{padding:32,color:"#64748b"}}>Cargando...</div>;
 
   return (
-    <div style={styles.container}>
+    <div style={styles.page}>
       {modalOpen && <ModalSolicitud onClose={() => setModalOpen(false)} userId={userId || "a8e4b064-ca59-464e-9f69-baa40e1a529f"} onExito={handleExito} />}
-      <div style={styles.sidebar}>
-        <div style={styles.logo}>CM</div>
-        <nav style={styles.nav}>
-          <a style={styles.navItem}>Inicio</a>
-          <a style={styles.navItem}>Mis Cuentas</a>
-          <a style={styles.navItem} onClick={() => window.location.href='/mora'}>Recuperaciones / Mora</a>
-          <a style={styles.navItem}>Transferencias</a>
-          <a style={styles.navItem}>Pagos</a>
-        </nav>
-        <button style={styles.logoutBtn} onClick={handleLogout}>Cerrar sesion</button>
-      </div>
-      <div style={styles.main}>
-        <div style={styles.topbar}>
-          <h1 style={styles.welcome}>Bienvenido, {usuario.nombre || usuario.email}</h1>
+
+      <nav style={styles.nav}>
+        <div style={styles.navLeft}>
+          <div style={styles.logo}>CM</div>
+          <div>
+            <div style={styles.logoName}>CMAC Maynas</div>
+            <div style={styles.logoSub}>Banca por Internet</div>
+          </div>
         </div>
+        <div style={styles.navLinks}>
+          {["Inicio", "Mis Cuentas", "Préstamos", "Transferencias", "Pagos"].map(l => (
+            <a key={l} style={styles.navLink}>{l}</a>
+          ))}
+        </div>
+        <div style={styles.navRight}>
+          <div style={styles.userBadge}>{(usuario.nombre || usuario.email)?.[0]?.toUpperCase()}</div>
+          <button style={styles.btnLogout} onClick={handleLogout}>Salir</button>
+        </div>
+      </nav>
+
+      <div style={styles.hero}>
+        <div>
+          <h1 style={styles.heroTitle}>Bienvenido, {usuario.nombre || usuario.email} 👋</h1>
+          <p style={styles.heroSub}>Aquí tienes un resumen de tu actividad financiera</p>
+        </div>
+      </div>
+
+      <div style={styles.content}>
         {exito && (
           <div style={styles.exitoBox}>
-            Solicitud enviada exitosamente. Cuota mensual estimada: S/ {exito.cuota_mensual} — Estado: {exito.estado}
+            ✅ Solicitud enviada exitosamente — Cuota mensual: <strong>S/ {exito.cuota_mensual}</strong> — Estado: <strong>{exito.estado}</strong>
           </div>
         )}
+
         <div style={styles.cards}>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Cuenta de Ahorros</div>
-            <div style={styles.cardAmount}>S/ 0.00</div>
-            <div style={styles.cardSub}>Saldo disponible</div>
-          </div>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Creditos Activos</div>
-            <div style={styles.cardAmount}>{solicitudes.length}</div>
-            <div style={styles.cardSub}>Solicitudes enviadas</div>
-          </div>
-          <div style={styles.card}>
-            <div style={styles.cardLabel}>Proxima Cuota</div>
-            <div style={styles.cardAmount}>S/ {solicitudes[0]?.cuota_mensual || "0.00"}</div>
-            <div style={styles.cardSub}>{solicitudes.length ? "Pendiente de aprobacion" : "Sin cuotas pendientes"}</div>
-          </div>
+          {[
+            { label: "Cuenta de Ahorros", value: "S/ 0.00", sub: "Saldo disponible", icon: "🏦", color: "#0ea5e9" },
+            { label: "Créditos Activos", value: solicitudes.length.toString(), sub: "Solicitudes enviadas", icon: "📋", color: "#8b5cf6" },
+            { label: "Próxima Cuota", value: `S/ ${solicitudes[0]?.cuota_mensual || "0.00"}`, sub: solicitudes.length ? "Pendiente de aprobación" : "Sin cuotas pendientes", icon: "📅", color: "#059669" },
+          ].map((c, i) => (
+            <div key={i} style={styles.card}>
+              <div style={{ ...styles.cardIcon, background: c.color + "15", color: c.color }}>{c.icon}</div>
+              <div style={styles.cardLabel}>{c.label}</div>
+              <div style={styles.cardValue}>{c.value}</div>
+              <div style={styles.cardSub}>{c.sub}</div>
+            </div>
+          ))}
         </div>
-        <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>Solicitar Credito</h2>
-          <p style={styles.sectionText}>Aqui podras solicitar un credito empresarial o de consumo.</p>
-          <button style={styles.btnPrimary} onClick={() => setModalOpen(true)}>Nueva Solicitud</button>
-          <button style={{...styles.btnPrimary, background: '#1a3a1a', marginTop: 8}} onClick={() => window.location.href='/mora'}>Ver Bandeja de Mora</button>
-        </div>
-        {solicitudes.length > 0 && (
+
+        <div style={styles.grid}>
           <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Mis Solicitudes</h2>
-            {solicitudes.map((s, i) => (
-              <div key={i} style={styles.solicitudRow}>
-                <span>S/ {s.monto} — {s.plazo_meses} meses — TEA {s.tasa_anual}%</span>
-                <span style={styles.badge}>{s.estado}</span>
-              </div>
-            ))}
+            <h2 style={styles.sectionTitle}>Solicitar Crédito</h2>
+            <p style={styles.sectionDesc}>Accede a créditos empresariales o de consumo con las mejores tasas de la Amazonía.</p>
+            <div style={styles.btnRow}>
+              <button style={styles.btnPrimary} onClick={() => setModalOpen(true)}>+ Nueva Solicitud</button>
+              <button style={styles.btnSecondary} onClick={() => window.location.href = "/mora"}>Ver Bandeja de Mora</button>
+            </div>
           </div>
-        )}
+
+          {solicitudes.length > 0 && (
+            <div style={styles.section}>
+              <h2 style={styles.sectionTitle}>Mis Solicitudes</h2>
+              {solicitudes.map((s, i) => (
+                <div key={i} style={styles.solicitudRow}>
+                  <div>
+                    <div style={styles.solicitudMonto}>S/ {s.monto}</div>
+                    <div style={styles.solicitudDetalle}>{s.plazo_meses} meses — TEA {s.tasa_anual}% — Cuota S/ {s.cuota_mensual}</div>
+                  </div>
+                  <span style={styles.estadoBadge}>{s.estado}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 const styles = {
-  container: { display: "flex", minHeight: "100vh", background: "#f5f5f5", fontFamily: "sans-serif" },
-  sidebar: { width: 220, background: "#1a3a1a", display: "flex", flexDirection: "column", padding: "24px 0", gap: 4 },
-  logo: { background: "#b8960c", color: "#fff", fontWeight: 700, fontSize: 22, borderRadius: 10, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px" },
-  nav: { display: "flex", flexDirection: "column", gap: 4, padding: "0 12px" },
-  navItem: { color: "#ccc", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 14, textDecoration: "none" },
-  logoutBtn: { margin: "auto 12px 0", background: "#c0392b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 0", cursor: "pointer", fontSize: 14 },
-  main: { flex: 1, padding: 32, display: "flex", flexDirection: "column", gap: 24 },
-  topbar: { background: "#fff", borderRadius: 12, padding: "16px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" },
-  welcome: { margin: 0, fontSize: 20, color: "#1a1a1a" },
-  exitoBox: { background: "#e8f5e9", color: "#2d6a2d", padding: "14px 20px", borderRadius: 10, fontWeight: 500 },
-  cards: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 },
-  card: { background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.08)" },
-  cardLabel: { fontSize: 13, color: "#888", marginBottom: 8 },
-  cardAmount: { fontSize: 28, fontWeight: 700, color: "#1a3a1a" },
-  cardSub: { fontSize: 12, color: "#aaa", marginTop: 4 },
-  section: { background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.08)" },
-  sectionTitle: { margin: "0 0 8px", color: "#1a3a1a" },
-  sectionText: { color: "#666", fontSize: 14, marginBottom: 16 },
-  btnPrimary: { background: "#2d6a2d", color: "#fff", border: "none", borderRadius: 8, padding: "12px 24px", fontSize: 15, cursor: "pointer" },
-  solicitudRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f0f0f0" },
-  badge: { background: "#fff3cd", color: "#856404", padding: "4px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600 },
+  page: { minHeight: "100vh", background: "#f8f9ff", fontFamily: "'Segoe UI', sans-serif" },
+  nav: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 48px", background: "#fff", boxShadow: "0 1px 0 #e5e7eb", position: "sticky", top: 0, zIndex: 100 },
+  navLeft: { display: "flex", alignItems: "center", gap: 12 },
+  logo: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", fontWeight: 800, fontSize: 18, borderRadius: 10, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center" },
+  logoName: { fontWeight: 700, fontSize: 16, color: "#1e3a5f" },
+  logoSub: { fontSize: 11, color: "#64748b" },
+  navLinks: { display: "flex", gap: 28 },
+  navLink: { color: "#374151", fontSize: 14, fontWeight: 500, cursor: "pointer", textDecoration: "none" },
+  navRight: { display: "flex", alignItems: "center", gap: 12 },
+  userBadge: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", fontWeight: 700, fontSize: 16, borderRadius: "50%", width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center" },
+  btnLogout: { background: "none", border: "1.5px solid #e2e8f0", borderRadius: 8, padding: "7px 16px", cursor: "pointer", fontSize: 13, color: "#64748b", fontWeight: 500 },
+  hero: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", padding: "40px 48px", color: "#fff" },
+  heroTitle: { margin: 0, fontSize: 28, fontWeight: 800 },
+  heroSub: { margin: "8px 0 0", opacity: 0.85, fontSize: 15 },
+  content: { padding: "32px 48px" },
+  exitoBox: { background: "#ecfdf5", color: "#065f46", padding: "14px 20px", borderRadius: 12, marginBottom: 24, fontSize: 14, border: "1px solid #a7f3d0" },
+  cards: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 24 },
+  card: { background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+  cardIcon: { width: 48, height: 48, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 16 },
+  cardLabel: { fontSize: 13, color: "#64748b", marginBottom: 6 },
+  cardValue: { fontSize: 30, fontWeight: 800, color: "#0f172a", marginBottom: 4 },
+  cardSub: { fontSize: 12, color: "#94a3b8" },
+  grid: { display: "flex", flexDirection: "column", gap: 20 },
+  section: { background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+  sectionTitle: { margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#0f172a" },
+  sectionDesc: { color: "#64748b", fontSize: 14, marginBottom: 20 },
+  btnRow: { display: "flex", gap: 12 },
+  btnPrimary: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
+  btnSecondary: { background: "#fff", color: "#1e3a5f", border: "2px solid #1e3a5f", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
+  solicitudRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: "1px solid #f1f5f9" },
+  solicitudMonto: { fontSize: 16, fontWeight: 700, color: "#0f172a" },
+  solicitudDetalle: { fontSize: 12, color: "#64748b", marginTop: 2 },
+  estadoBadge: { background: "#fef9c3", color: "#854d0e", padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600 },
 };
-
-

@@ -3,12 +3,7 @@
 export default function LoginModal({ open, onClose }) {
   const [tab, setTab] = useState("login");
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [registerData, setRegisterData] = useState({
-    dni: "",
-    cuenta: "",
-    email: "",
-    password: "",
-  });
+  const [registerData, setRegisterData] = useState({ dni: "", cuenta: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,10 +17,7 @@ export default function LoginModal({ open, onClose }) {
       const res = await fetch("http://localhost:3000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: loginData.email,
-          password: loginData.password,
-        }),
+        body: JSON.stringify({ email: loginData.email, password: loginData.password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Error al iniciar sesion");
@@ -54,58 +46,58 @@ export default function LoginModal({ open, onClose }) {
 
   return (
     <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={styles.box}>
-        <div style={styles.header}>
-          <div style={styles.logoBox}>CM</div>
-          <div>
-            <div style={styles.h1}>Banca por Internet</div>
-            <div style={styles.h2}>CMAC Maynas - Acceso seguro</div>
+      <div style={styles.modal}>
+        <div style={styles.leftPanel}>
+          <div style={styles.brandIcon}>CM</div>
+          <h2 style={styles.brandTitle}>CMAC Maynas</h2>
+          <p style={styles.brandSub}>Banca por Internet</p>
+          <div style={styles.features}>
+            {["🔒 Conexión cifrada SSL", "🏦 Supervisado por la SBS", "⚡ Acceso 24/7", "🌿 Desde la Amazonía"].map(f => (
+              <div key={f} style={styles.feature}>{f}</div>
+            ))}
           </div>
-          <button style={styles.closeBtn} onClick={onClose}>X</button>
         </div>
-        <div style={styles.body}>
-          <div style={styles.tabRow}>
-            <button style={{ ...styles.tab, ...(tab === "login" ? styles.tabActive : {}) }} onClick={() => { setTab("login"); setError(""); }}>Iniciar sesion</button>
+        <div style={styles.rightPanel}>
+          <button style={styles.closeBtn} onClick={onClose}>✕</button>
+          <h3 style={styles.formTitle}>{tab === "login" ? "Iniciar sesión" : "Crear cuenta"}</h3>
+          <div style={styles.tabs}>
+            <button style={{ ...styles.tab, ...(tab === "login" ? styles.tabActive : {}) }} onClick={() => { setTab("login"); setError(""); }}>Ingresar</button>
             <button style={{ ...styles.tab, ...(tab === "register" ? styles.tabActive : {}) }} onClick={() => { setTab("register"); setError(""); }}>Registrarme</button>
           </div>
-          {error && <div style={styles.errorBox}>{error}</div>}
+          {error && <div style={styles.error}>{error}</div>}
           {tab === "login" && (
-            <form onSubmit={handleLogin}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Correo electronico</label>
+            <form onSubmit={handleLogin} style={styles.form}>
+              <div style={styles.field}>
+                <label style={styles.label}>Correo electrónico</label>
                 <input type="email" required style={styles.input} placeholder="tu@correo.com" value={loginData.email} onChange={(e) => setLoginData({ ...loginData, email: e.target.value })} />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Contrasena</label>
-                <input type="password" required style={styles.input} placeholder="********" value={loginData.password} onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
+              <div style={styles.field}>
+                <label style={styles.label}>Contraseña</label>
+                <input type="password" required style={styles.input} placeholder="••••••••" value={loginData.password} onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
               </div>
-              <button type="submit" style={styles.btnLogin} disabled={loading}>{loading ? "Ingresando..." : "Ingresar a mi cuenta"}</button>
-              <div style={styles.links}>
-                <a href="#" style={styles.link}>Olvidaste tu contrasena?</a>
-                <a href="#" style={styles.link}>Primer acceso</a>
-              </div>
-              <div style={styles.footer}>Conexion cifrada SSL - Supervisado por la SBS</div>
+              <a style={styles.forgot}>¿Olvidaste tu contraseña?</a>
+              <button type="submit" style={styles.btnSubmit} disabled={loading}>{loading ? "Ingresando..." : "Ingresar a mi cuenta →"}</button>
             </form>
           )}
           {tab === "register" && (
-            <form onSubmit={handleRegister}>
-              <div style={styles.formGroup}>
+            <form onSubmit={handleRegister} style={styles.form}>
+              <div style={styles.field}>
                 <label style={styles.label}>DNI</label>
                 <input type="text" required style={styles.input} placeholder="12345678" value={registerData.dni} onChange={(e) => setRegisterData({ ...registerData, dni: e.target.value })} />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>N. de cuenta</label>
+              <div style={styles.field}>
+                <label style={styles.label}>N° de cuenta</label>
                 <input type="text" required style={styles.input} placeholder="000-000000" value={registerData.cuenta} onChange={(e) => setRegisterData({ ...registerData, cuenta: e.target.value })} />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Correo electronico</label>
+              <div style={styles.field}>
+                <label style={styles.label}>Correo electrónico</label>
                 <input type="email" required style={styles.input} placeholder="tu@correo.com" value={registerData.email} onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })} />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Contrasena</label>
-                <input type="password" required style={styles.input} placeholder="********" value={registerData.password} onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })} />
+              <div style={styles.field}>
+                <label style={styles.label}>Contraseña</label>
+                <input type="password" required style={styles.input} placeholder="••••••••" value={registerData.password} onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })} />
               </div>
-              <button type="submit" style={styles.btnLogin} disabled={loading}>{loading ? "Registrando..." : "Crear cuenta"}</button>
+              <button type="submit" style={styles.btnSubmit} disabled={loading}>{loading ? "Registrando..." : "Crear cuenta →"}</button>
             </form>
           )}
         </div>
@@ -115,24 +107,25 @@ export default function LoginModal({ open, onClose }) {
 }
 
 const styles = {
-  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-  box: { background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480, padding: 32, boxShadow: "0 8px 40px rgba(0,0,0,0.18)" },
-  header: { display: "flex", alignItems: "center", gap: 16, marginBottom: 24 },
-  logoBox: { background: "#b8960c", color: "#fff", fontWeight: 700, fontSize: 18, borderRadius: 10, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center" },
-  h1: { fontWeight: 700, fontSize: 18, color: "#1a1a1a" },
-  h2: { fontSize: 13, color: "#666" },
-  closeBtn: { marginLeft: "auto", background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999" },
-  body: { display: "flex", flexDirection: "column", gap: 16 },
-  tabRow: { display: "flex", gap: 8, background: "#f0f0f0", borderRadius: 10, padding: 4 },
-  tab: { flex: 1, padding: "8px 0", border: "none", borderRadius: 8, background: "none", cursor: "pointer", fontWeight: 500, color: "#666" },
-  tabActive: { background: "#fff", color: "#1a1a1a", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" },
-  errorBox: { background: "#ffeaea", color: "#c0392b", padding: "10px 14px", borderRadius: 8, fontSize: 14 },
-  formGroup: { display: "flex", flexDirection: "column", gap: 6 },
-  label: { fontSize: 14, fontWeight: 500, color: "#444" },
-  input: { padding: "10px 14px", borderRadius: 8, border: "1.5px solid #ddd", fontSize: 15, outline: "none" },
-  btnLogin: { background: "#2d6a2d", color: "#fff", border: "none", borderRadius: 10, padding: "14px 0", fontSize: 16, fontWeight: 600, cursor: "pointer", width: "100%" },
-  links: { display: "flex", justifyContent: "space-between", marginTop: 4 },
-  link: { color: "#2d6a2d", fontSize: 13, textDecoration: "none" },
-  footer: { textAlign: "center", fontSize: 12, color: "#aaa", marginTop: 8 },
+  overlay: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)" },
+  modal: { display: "flex", borderRadius: 24, overflow: "hidden", width: "100%", maxWidth: 760, boxShadow: "0 25px 80px rgba(0,0,0,0.3)" },
+  leftPanel: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", padding: 40, width: 260, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 },
+  brandIcon: { background: "rgba(255,255,255,0.2)", color: "#fff", fontWeight: 800, fontSize: 24, borderRadius: 16, width: 64, height: 64, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  brandTitle: { color: "#fff", fontSize: 22, fontWeight: 700, margin: 0 },
+  brandSub: { color: "rgba(255,255,255,0.8)", fontSize: 13, margin: 0 },
+  features: { marginTop: 24, display: "flex", flexDirection: "column", gap: 10, width: "100%" },
+  feature: { color: "rgba(255,255,255,0.85)", fontSize: 12, padding: "8px 12px", background: "rgba(255,255,255,0.1)", borderRadius: 8 },
+  rightPanel: { background: "#fff", padding: 40, flex: 1, position: "relative" },
+  closeBtn: { position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#94a3b8" },
+  formTitle: { fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 20px" },
+  tabs: { display: "flex", background: "#f1f5f9", borderRadius: 10, padding: 4, marginBottom: 24 },
+  tab: { flex: 1, padding: "8px 0", border: "none", borderRadius: 8, background: "none", cursor: "pointer", fontWeight: 500, color: "#64748b", fontSize: 14 },
+  tabActive: { background: "#fff", color: "#0f172a", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" },
+  error: { background: "#fef2f2", color: "#dc2626", padding: "10px 14px", borderRadius: 8, fontSize: 13, marginBottom: 16 },
+  form: { display: "flex", flexDirection: "column", gap: 16 },
+  field: { display: "flex", flexDirection: "column", gap: 6 },
+  label: { fontSize: 13, fontWeight: 500, color: "#374151" },
+  input: { padding: "11px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none", transition: "border 0.2s" },
+  forgot: { color: "#0ea5e9", fontSize: 12, cursor: "pointer", textAlign: "right", marginTop: -8 },
+  btnSubmit: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "13px 0", fontSize: 15, fontWeight: 600, cursor: "pointer", marginTop: 8 },
 };
-
