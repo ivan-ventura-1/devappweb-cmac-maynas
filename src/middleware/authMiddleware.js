@@ -1,4 +1,10 @@
-﻿const supabase = require('../config/supabase');
+﻿const { createClient } = require('@supabase/supabase-js');
+const supabase = require('../config/supabase');
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 const verificarToken = async (req, res, next) => {
   try {
@@ -8,11 +14,11 @@ const verificarToken = async (req, res, next) => {
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data.user) return res.status(401).json({ success: false, message: 'Token invalido' });
 
-    const { data: rolData } = await supabase
+    const { data: rolData } = await supabaseAdmin
       .from('roles_usuario')
       .select('rol')
       .eq('user_id', data.user.id)
-      .single();
+      .maybeSingle();
 
     req.user = { ...data.user, rol: rolData?.rol || 'cliente' };
     next();
