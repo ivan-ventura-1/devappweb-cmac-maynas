@@ -47,7 +47,7 @@ export default function Dashboard() {
         <nav style={styles.nav}>
           <a style={styles.navItem}>Inicio</a>
           <a style={styles.navItem}>Mis Cuentas</a>
-          <a style={styles.navItem}>Prestamos</a>
+          <a style={styles.navItem} onClick={() => window.location.href='/mora'}>Recuperaciones / Mora</a>
           <a style={styles.navItem}>Transferencias</a>
           <a style={styles.navItem}>Pagos</a>
         </nav>
@@ -83,6 +83,7 @@ export default function Dashboard() {
           <h2 style={styles.sectionTitle}>Solicitar Credito</h2>
           <p style={styles.sectionText}>Aqui podras solicitar un credito empresarial o de consumo.</p>
           <button style={styles.btnPrimary} onClick={() => setModalOpen(true)}>Nueva Solicitud</button>
+          <button style={{...styles.btnPrimary, background: '#1a3a1a', marginTop: 8}} onClick={() => window.location.href='/mora'}>Ver Bandeja de Mora</button>
         </div>
         {solicitudes.length > 0 && (
           <div style={styles.section}>
@@ -123,3 +124,5 @@ const styles = {
   solicitudRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f0f0f0" },
   badge: { background: "#fff3cd", color: "#856404", padding: "4px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600 },
 };
+
+
