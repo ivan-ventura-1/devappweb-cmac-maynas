@@ -29,8 +29,8 @@ export default function LoginModal({ open, onClose }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Error al iniciar sesion");
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("usuario", JSON.stringify(data.usuario));
+      localStorage.setItem("token", data.data.token);
+      localStorage.setItem("usuario", JSON.stringify(data.data.usuario));
       window.location.href = "/dashboard";
     } catch (err) {
       setError(err.message || "Error al iniciar sesion");
@@ -135,3 +135,4 @@ const styles = {
   link: { color: "#2d6a2d", fontSize: 13, textDecoration: "none" },
   footer: { textAlign: "center", fontSize: 12, color: "#aaa", marginTop: 8 },
 };
+
