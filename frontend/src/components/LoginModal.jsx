@@ -1,5 +1,4 @@
-import { useState } from "react";
-// import { supabase } from "../lib/supabase"; // descomenta cuando tengas Supabase configurado
+﻿import { useState } from "react";
 
 export default function LoginModal({ open, onClose }) {
   const [tab, setTab] = useState("login");
@@ -15,42 +14,37 @@ export default function LoginModal({ open, onClose }) {
 
   if (!open) return null;
 
-  // ── LOGIN ──────────────────────────────────────────────
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      // const { error } = await supabase.auth.signInWithPassword({
-      //   email: loginData.email,
-      //   password: loginData.password,
-      // });
-      // if (error) throw error;
-      // window.location.href = "/dashboard";
-      console.log("Login con:", loginData); // quitar en producción
+      const res = await fetch("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginData.email,
+          password: loginData.password,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Error al iniciar sesion");
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("usuario", JSON.stringify(data.usuario));
+      window.location.href = "/dashboard";
     } catch (err) {
-      setError(err.message || "Error al iniciar sesión");
+      setError(err.message || "Error al iniciar sesion");
     } finally {
       setLoading(false);
     }
   };
 
-  // ── REGISTRO ───────────────────────────────────────────
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      // const { error } = await supabase.auth.signUp({
-      //   email: registerData.email,
-      //   password: registerData.password,
-      //   options: {
-      //     data: { dni: registerData.dni, cuenta: registerData.cuenta },
-      //   },
-      // });
-      // if (error) throw error;
-      // alert("Revisa tu correo para confirmar tu cuenta");
-      console.log("Registro con:", registerData); // quitar en producción
+      console.log("Registro con:", registerData);
     } catch (err) {
       setError(err.message || "Error al registrarse");
     } finally {
@@ -61,133 +55,59 @@ export default function LoginModal({ open, onClose }) {
   return (
     <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={styles.box}>
-        {/* Header */}
         <div style={styles.header}>
           <div style={styles.logoBox}>CM</div>
           <div>
             <div style={styles.h1}>Banca por Internet</div>
-            <div style={styles.h2}>CMAC Maynas — Acceso seguro</div>
+            <div style={styles.h2}>CMAC Maynas - Acceso seguro</div>
           </div>
-          <button style={styles.closeBtn} onClick={onClose} aria-label="Cerrar">
-            ✕
-          </button>
+          <button style={styles.closeBtn} onClick={onClose}>X</button>
         </div>
-
-        {/* Body */}
         <div style={styles.body}>
-          {/* Tabs */}
           <div style={styles.tabRow}>
-            <button
-              style={{ ...styles.tab, ...(tab === "login" ? styles.tabActive : {}) }}
-              onClick={() => { setTab("login"); setError(""); }}
-            >
-              Iniciar sesión
-            </button>
-            <button
-              style={{ ...styles.tab, ...(tab === "register" ? styles.tabActive : {}) }}
-              onClick={() => { setTab("register"); setError(""); }}
-            >
-              Registrarme
-            </button>
+            <button style={{ ...styles.tab, ...(tab === "login" ? styles.tabActive : {}) }} onClick={() => { setTab("login"); setError(""); }}>Iniciar sesion</button>
+            <button style={{ ...styles.tab, ...(tab === "register" ? styles.tabActive : {}) }} onClick={() => { setTab("register"); setError(""); }}>Registrarme</button>
           </div>
-
-          {/* Error */}
           {error && <div style={styles.errorBox}>{error}</div>}
-
-          {/* Panel Login */}
           {tab === "login" && (
             <form onSubmit={handleLogin}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Correo electrónico</label>
-                <input
-                  type="email"
-                  required
-                  style={styles.input}
-                  placeholder="tu@correo.com"
-                  value={loginData.email}
-                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                />
+                <label style={styles.label}>Correo electronico</label>
+                <input type="email" required style={styles.input} placeholder="tu@correo.com" value={loginData.email} onChange={(e) => setLoginData({ ...loginData, email: e.target.value })} />
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Contraseña</label>
-                <input
-                  type="password"
-                  required
-                  style={styles.input}
-                  placeholder="••••••••"
-                  value={loginData.password}
-                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                />
+                <label style={styles.label}>Contrasena</label>
+                <input type="password" required style={styles.input} placeholder="********" value={loginData.password} onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
               </div>
-              <button type="submit" style={styles.btnLogin} disabled={loading}>
-                {loading ? "Ingresando..." : "🔐 Ingresar a mi cuenta"}
-              </button>
+              <button type="submit" style={styles.btnLogin} disabled={loading}>{loading ? "Ingresando..." : "Ingresar a mi cuenta"}</button>
               <div style={styles.links}>
-                <a href="#" style={styles.link}>¿Olvidaste tu contraseña?</a>
+                <a href="#" style={styles.link}>Olvidaste tu contrasena?</a>
                 <a href="#" style={styles.link}>Primer acceso</a>
               </div>
+              <div style={styles.footer}>Conexion cifrada SSL - Supervisado por la SBS</div>
             </form>
           )}
-
-          {/* Panel Registro */}
           {tab === "register" && (
             <form onSubmit={handleRegister}>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Número de DNI</label>
-                <input
-                  type="text"
-                  required
-                  maxLength={8}
-                  style={styles.input}
-                  placeholder="8 dígitos"
-                  value={registerData.dni}
-                  onChange={(e) => setRegisterData({ ...registerData, dni: e.target.value })}
-                />
+                <label style={styles.label}>DNI</label>
+                <input type="text" required style={styles.input} placeholder="12345678" value={registerData.dni} onChange={(e) => setRegisterData({ ...registerData, dni: e.target.value })} />
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Número de cuenta</label>
-                <input
-                  type="text"
-                  required
-                  style={styles.input}
-                  placeholder="Número de tu cuenta CMAC Maynas"
-                  value={registerData.cuenta}
-                  onChange={(e) => setRegisterData({ ...registerData, cuenta: e.target.value })}
-                />
+                <label style={styles.label}>N. de cuenta</label>
+                <input type="text" required style={styles.input} placeholder="000-000000" value={registerData.cuenta} onChange={(e) => setRegisterData({ ...registerData, cuenta: e.target.value })} />
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Correo electrónico</label>
-                <input
-                  type="email"
-                  required
-                  style={styles.input}
-                  placeholder="tu@correo.com"
-                  value={registerData.email}
-                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                />
+                <label style={styles.label}>Correo electronico</label>
+                <input type="email" required style={styles.input} placeholder="tu@correo.com" value={registerData.email} onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })} />
               </div>
               <div style={styles.formGroup}>
-                <label style={styles.label}>Contraseña</label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  style={styles.input}
-                  placeholder="Mínimo 8 caracteres"
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                />
+                <label style={styles.label}>Contrasena</label>
+                <input type="password" required style={styles.input} placeholder="********" value={registerData.password} onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })} />
               </div>
-              <button type="submit" style={styles.btnLogin} disabled={loading}>
-                {loading ? "Registrando..." : "✅ Crear acceso digital"}
-              </button>
+              <button type="submit" style={styles.btnLogin} disabled={loading}>{loading ? "Registrando..." : "Crear cuenta"}</button>
             </form>
           )}
-
-          {/* Footer seguridad */}
-          <div style={styles.security}>
-            🔒 Conexión cifrada SSL · Supervisado por la SBS
-          </div>
         </div>
       </div>
     </div>
@@ -195,149 +115,23 @@ export default function LoginModal({ open, onClose }) {
 }
 
 const styles = {
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.55)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-  },
-  box: {
-    background: "#fff",
-    borderRadius: "16px",
-    width: "100%",
-    maxWidth: "380px",
-    overflow: "hidden",
-  },
-  header: {
-    background: "#0D3D21",
-    padding: "1.5rem",
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    borderBottom: "3px solid #C8922A",
-    position: "relative",
-  },
-  logoBox: {
-    width: "40px",
-    height: "40px",
-    background: "#C8922A",
-    borderRadius: "8px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily: "'Playfair Display', serif",
-    fontWeight: "900",
-    fontSize: "17px",
-    color: "#0D3D21",
-    flexShrink: 0,
-  },
-  h1: { color: "#fff", fontWeight: "600", fontSize: "15px" },
-  h2: { color: "rgba(255,255,255,0.55)", fontSize: "11px", marginTop: "2px" },
-  closeBtn: {
-    position: "absolute",
-    top: "14px",
-    right: "14px",
-    background: "rgba(255,255,255,0.12)",
-    border: "none",
-    color: "#fff",
-    width: "28px",
-    height: "28px",
-    borderRadius: "50%",
-    cursor: "pointer",
-    fontSize: "14px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  body: { padding: "2rem 1.5rem" },
-  tabRow: {
-    display: "flex",
-    background: "#f3f5f2",
-    borderRadius: "8px",
-    padding: "4px",
-    marginBottom: "1.5rem",
-  },
-  tab: {
-    flex: 1,
-    padding: "8px",
-    textAlign: "center",
-    fontSize: "13px",
-    fontWeight: "500",
-    color: "#888",
-    borderRadius: "6px",
-    cursor: "pointer",
-    border: "none",
-    background: "transparent",
-    transition: "all 0.2s",
-  },
-  tabActive: {
-    background: "#fff",
-    color: "#0D3D21",
-    fontWeight: "600",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-  },
-  errorBox: {
-    background: "#fde8e8",
-    color: "#b91c1c",
-    fontSize: "13px",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    marginBottom: "1rem",
-  },
-  formGroup: { marginBottom: "1rem" },
-  label: {
-    fontSize: "12px",
-    fontWeight: "600",
-    color: "#555",
-    marginBottom: "5px",
-    display: "block",
-    letterSpacing: "0.3px",
-  },
-  input: {
-    width: "100%",
-    padding: "10px 12px",
-    border: "1.5px solid #dde3db",
-    borderRadius: "8px",
-    fontSize: "14px",
-    color: "#1a1a1a",
-    background: "#fff",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  btnLogin: {
-    width: "100%",
-    background: "#1B6B3A",
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: "14px",
-    padding: "13px",
-    borderRadius: "8px",
-    border: "none",
-    cursor: "pointer",
-    marginTop: "0.5rem",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-  },
-  links: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginTop: "1rem",
-  },
-  link: { color: "#1B6B3A", fontSize: "12px", textDecoration: "none" },
-  security: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    justifyContent: "center",
-    color: "#999",
-    fontSize: "11px",
-    marginTop: "1.2rem",
-    paddingTop: "1.2rem",
-    borderTop: "1px solid #eee",
-  },
+  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
+  box: { background: "#fff", borderRadius: 16, width: "100%", maxWidth: 480, padding: 32, boxShadow: "0 8px 40px rgba(0,0,0,0.18)" },
+  header: { display: "flex", alignItems: "center", gap: 16, marginBottom: 24 },
+  logoBox: { background: "#b8960c", color: "#fff", fontWeight: 700, fontSize: 18, borderRadius: 10, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center" },
+  h1: { fontWeight: 700, fontSize: 18, color: "#1a1a1a" },
+  h2: { fontSize: 13, color: "#666" },
+  closeBtn: { marginLeft: "auto", background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#999" },
+  body: { display: "flex", flexDirection: "column", gap: 16 },
+  tabRow: { display: "flex", gap: 8, background: "#f0f0f0", borderRadius: 10, padding: 4 },
+  tab: { flex: 1, padding: "8px 0", border: "none", borderRadius: 8, background: "none", cursor: "pointer", fontWeight: 500, color: "#666" },
+  tabActive: { background: "#fff", color: "#1a1a1a", boxShadow: "0 1px 4px rgba(0,0,0,0.1)" },
+  errorBox: { background: "#ffeaea", color: "#c0392b", padding: "10px 14px", borderRadius: 8, fontSize: 14 },
+  formGroup: { display: "flex", flexDirection: "column", gap: 6 },
+  label: { fontSize: 14, fontWeight: 500, color: "#444" },
+  input: { padding: "10px 14px", borderRadius: 8, border: "1.5px solid #ddd", fontSize: 15, outline: "none" },
+  btnLogin: { background: "#2d6a2d", color: "#fff", border: "none", borderRadius: 10, padding: "14px 0", fontSize: 16, fontWeight: 600, cursor: "pointer", width: "100%" },
+  links: { display: "flex", justifyContent: "space-between", marginTop: 4 },
+  link: { color: "#2d6a2d", fontSize: 13, textDecoration: "none" },
+  footer: { textAlign: "center", fontSize: 12, color: "#aaa", marginTop: 8 },
 };
