@@ -1,158 +1,42 @@
-const products = [
-  {
-    icon: "🏠",
-    name: "Crédito Hipotecario",
-    desc: "Financia la casa de tus sueños con cuotas accesibles.",
-    tag: "Desde 8.5% TEA",
-  },
-  {
-    icon: "💼",
-    name: "Crédito MYPE",
-    desc: "Capital de trabajo para impulsar tu negocio local.",
-    tag: "Hasta S/ 150,000",
-  },
-  {
-    icon: "🐷",
-    name: "Cuenta Ahorro",
-    desc: "Genera rentabilidad con disponibilidad inmediata.",
-    tag: "Hasta 5.5% TNA",
-  },
-  {
-    icon: "📜",
-    name: "Depósito a Plazo",
-    desc: "Mayor rendimiento fijando tu dinero por un período.",
-    tag: "Hasta 8% TEA",
-  },
-  {
-    icon: "🌱",
-    name: "Crédito Agropecuario",
-    desc: "Financia tus cultivos y actividades del campo.",
-    tag: "Especial Loreto",
-  },
+﻿const productos = [
+  { icon: "💳", title: "Tarjetas", desc: "Tarjetas de débito y crédito con beneficios exclusivos para clientes CMAC Maynas." },
+  { icon: "🏢", title: "Crédito Empresarial", desc: "Financia tu negocio con tasas competitivas y plazos flexibles hasta 36 meses." },
+  { icon: "🌾", title: "Crédito Agropecuario", desc: "Apoyo financiero para agricultores y ganaderos de la región amazónica." },
+  { icon: "🌱", title: "Ahorro Futuro", desc: "Construye tu patrimonio con nuestra cuenta de ahorro programado con alta rentabilidad." },
+  { icon: "📍", title: "Cajeros / Agentes", desc: "Red de cajeros y agentes corresponsales en toda la región de Loreto." },
+  { icon: "🛡️", title: "Seguros", desc: "Protege lo que más quieres con nuestros planes de seguro de vida y accidentes." },
 ];
 
 export default function ProductsSection() {
   return (
     <section style={styles.section}>
       <div style={styles.header}>
-        <div style={styles.label}>Nuestros productos</div>
-        <h2 style={styles.title}>Servicios para cada necesidad</h2>
-        <p style={styles.sub}>
-          Créditos, ahorros y más — diseñados para el emprendedor amazónico.
-        </p>
+        <h2 style={styles.title}>Nuestros Productos</h2>
+        <p style={styles.sub}>Todo lo que necesitas para tu vida financiera en un solo lugar</p>
       </div>
-
       <div style={styles.grid}>
-        {products.map((p) => (
-          <ProductCard key={p.name} {...p} />
+        {productos.map((p, i) => (
+          <div key={i} style={styles.card}>
+            <div style={styles.icon}>{p.icon}</div>
+            <h3 style={styles.cardTitle}>{p.title}</h3>
+            <p style={styles.cardDesc}>{p.desc}</p>
+            <a style={styles.link}>Ver más →</a>
+          </div>
         ))}
       </div>
-
-      {/* Divider */}
-      <div style={styles.divider} />
     </section>
   );
 }
 
-function ProductCard({ icon, name, desc, tag }) {
-  return (
-    <div
-      style={styles.card}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = "#2E9E5A";
-        e.currentTarget.style.transform = "translateY(-3px)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "#e2e8e0";
-        e.currentTarget.style.transform = "translateY(0)";
-      }}
-    >
-      <div style={styles.iconBox}>{icon}</div>
-      <div style={styles.cardName}>{name}</div>
-      <div style={styles.cardDesc}>{desc}</div>
-      <div style={styles.cardTag}>{tag}</div>
-    </div>
-  );
-}
-
 const styles = {
-  section: {
-    padding: "3.5rem 2rem",
-    maxWidth: "960px",
-    margin: "0 auto",
-  },
-  header: { marginBottom: "2.5rem" },
-  label: {
-    fontSize: "11px",
-    letterSpacing: "2.5px",
-    textTransform: "uppercase",
-    color: "#2E9E5A",
-    fontWeight: "600",
-    marginBottom: "0.4rem",
-  },
-  title: {
-    fontFamily: "'Playfair Display', serif",
-    fontSize: "30px",
-    fontWeight: "700",
-    color: "#0D3D21",
-    marginBottom: "0.75rem",
-    lineHeight: "1.2",
-    margin: "0 0 0.75rem 0",
-  },
-  sub: {
-    color: "#5a5a5a",
-    fontSize: "14px",
-    margin: 0,
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-    gap: "1rem",
-  },
-  card: {
-    background: "#fff",
-    border: "1px solid #e2e8e0",
-    borderRadius: "14px",
-    padding: "1.5rem 1.2rem",
-    cursor: "pointer",
-    transition: "border-color 0.2s, transform 0.2s",
-  },
-  iconBox: {
-    width: "44px",
-    height: "44px",
-    background: "#e8f5ee",
-    borderRadius: "10px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: "1rem",
-    fontSize: "22px",
-  },
-  cardName: {
-    fontWeight: "600",
-    fontSize: "15px",
-    color: "#0D3D21",
-    marginBottom: "6px",
-  },
-  cardDesc: {
-    fontSize: "12px",
-    color: "#777",
-    lineHeight: "1.5",
-  },
-  cardTag: {
-    display: "inline-block",
-    marginTop: "12px",
-    background: "#e8f5ee",
-    color: "#1B6B3A",
-    fontSize: "11px",
-    fontWeight: "600",
-    padding: "3px 10px",
-    borderRadius: "100px",
-  },
-  divider: {
-    height: "4px",
-    background: "linear-gradient(90deg, #0D3D21, #C8922A, #2E9E5A)",
-    marginTop: "3rem",
-    borderRadius: "2px",
-  },
+  section: { padding: "80px 48px", background: "#fff" },
+  header: { textAlign: "center", marginBottom: 48 },
+  title: { fontSize: 36, fontWeight: 800, color: "#0f172a", margin: "0 0 12px" },
+  sub: { color: "#64748b", fontSize: 16 },
+  grid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, maxWidth: 1100, margin: "0 auto" },
+  card: { background: "#f8f9ff", borderRadius: 16, padding: 28, border: "1px solid #e2e8f0", transition: "transform 0.2s" },
+  icon: { fontSize: 36, marginBottom: 16 },
+  cardTitle: { fontSize: 18, fontWeight: 700, color: "#0f172a", margin: "0 0 10px" },
+  cardDesc: { fontSize: 14, color: "#64748b", lineHeight: 1.6, marginBottom: 16 },
+  link: { color: "#0ea5e9", fontSize: 14, fontWeight: 600, cursor: "pointer" },
 };
