@@ -96,7 +96,7 @@ export default function Dashboard() {
             <p style={styles.sectionDesc}>Accede a créditos empresariales o de consumo con las mejores tasas de la Amazonía.</p>
             <div style={styles.btnRow}>
               <button style={styles.btnPrimary} onClick={() => setModalOpen(true)}>+ Nueva Solicitud</button>
-              <button style={styles.btnSecondary} onClick={() => window.location.href = "/mora"}>Ver Bandeja de Mora</button>
+              <button style={styles.btnSecondary} onClick={() => window.location.href = "/mora"}>Ver Bandeja de Mora</button><button style={{background:"none",border:"2px solid #0ea5e9",borderRadius:"10px",padding:"12px 24px",fontSize:"14px",fontWeight:"600",cursor:"pointer",color:"#0ea5e9"}} onClick={() => window.location.href="/calculadora.html"}>📊 Calculadora 30 Casos</button>
             </div>
           </div>
 
@@ -155,3 +155,9 @@ const styles = {
   solicitudDetalle: { fontSize: 12, color: "#64748b", marginTop: 2 },
   estadoBadge: { background: "#fef9c3", color: "#854d0e", padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600 },
 };
+
+
+
+
+
+
