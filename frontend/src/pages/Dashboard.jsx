@@ -10,19 +10,31 @@ export default function Dashboard() {
 
   useEffect(() => {
     const u = localStorage.getItem("usuario");
+    const token = localStorage.getItem("token");
     if (!u || u === "undefined") {
       setUsuario({ email: "cliente@cmac.com", nombre: "Cliente" });
       setUserId("a8e4b064-ca59-464e-9f69-baa40e1a529f");
+      cargarSolicitudes("a8e4b064-ca59-464e-9f69-baa40e1a529f", token);
       return;
     }
     try {
       const parsed = JSON.parse(u);
       setUsuario(parsed);
       setUserId(parsed.id);
+      if (parsed.id && token) cargarSolicitudes(parsed.id, token);
     } catch(e) {
       setUsuario({ email: "cliente@cmac.com", nombre: "Cliente" });
     }
   }, []);
+
+  const cargarSolicitudes = (uid, token) => {
+    fetch(`http://localhost:3000/api/credito/solicitudes/${uid}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => { if (d.success) setSolicitudes(d.data || []); })
+      .catch(() => {});
+  };
 
   const handleExito = (solicitud) => {
     setModalOpen(false);
@@ -35,6 +47,9 @@ export default function Dashboard() {
     localStorage.removeItem("usuario");
     window.location.href = "/";
   };
+
+  const estadoColor = { pendiente: "#d97706", aprobado: "#059669", rechazado: "#dc2626", desembolsado: "#1e3a5f" };
+  const estadoBg = { pendiente: "#fffbeb", aprobado: "#ecfdf5", rechazado: "#fef2f2", desembolsado: "#e0f2fe" };
 
   if (!usuario) return <div style={{padding:32,color:"#64748b"}}>Cargando...</div>;
 
@@ -71,15 +86,15 @@ export default function Dashboard() {
       <div style={styles.content}>
         {exito && (
           <div style={styles.exitoBox}>
-            ✅ Solicitud enviada exitosamente — Cuota mensual: <strong>S/ {exito.cuota_mensual}</strong> — Estado: <strong>{exito.estado}</strong>
+            ✅ Solicitud enviada — Cuota mensual: <strong>S/ {exito.cuota_mensual}</strong> — Estado: <strong>{exito.estado}</strong>
           </div>
         )}
 
         <div style={styles.cards}>
           {[
             { label: "Cuenta de Ahorros", value: "S/ 0.00", sub: "Saldo disponible", icon: "🏦", color: "#0ea5e9" },
-            { label: "Créditos Activos", value: solicitudes.length.toString(), sub: "Solicitudes enviadas", icon: "📋", color: "#8b5cf6" },
-            { label: "Próxima Cuota", value: `S/ ${solicitudes[0]?.cuota_mensual || "0.00"}`, sub: solicitudes.length ? "Pendiente de aprobación" : "Sin cuotas pendientes", icon: "📅", color: "#059669" },
+            { label: "Créditos Activos", value: solicitudes.filter(s => s.estado !== "rechazado").length.toString(), sub: "Solicitudes activas", icon: "📋", color: "#8b5cf6" },
+            { label: "Próxima Cuota", value: `S/ ${solicitudes.find(s => s.estado === "desembolsado")?.cuota_mensual || solicitudes[0]?.cuota_mensual || "0.00"}`, sub: solicitudes.length ? "Ver detalle abajo" : "Sin cuotas pendientes", icon: "📅", color: "#059669" },
           ].map((c, i) => (
             <div key={i} style={styles.card}>
               <div style={{ ...styles.cardIcon, background: c.color + "15", color: c.color }}>{c.icon}</div>
@@ -90,31 +105,33 @@ export default function Dashboard() {
           ))}
         </div>
 
-        <div style={styles.grid}>
-          <div style={styles.section}>
-            <h2 style={styles.sectionTitle}>Solicitar Crédito</h2>
-            <p style={styles.sectionDesc}>Accede a créditos empresariales o de consumo con las mejores tasas de la Amazonía.</p>
-            <div style={styles.btnRow}>
-              <button style={styles.btnPrimary} onClick={() => setModalOpen(true)}>+ Nueva Solicitud</button>
-              <button style={styles.btnSecondary} onClick={() => window.location.href = "/mora"}>Ver Bandeja de Mora</button><button style={{background:"none",border:"2px solid #0ea5e9",borderRadius:"10px",padding:"12px 24px",fontSize:"14px",fontWeight:"600",cursor:"pointer",color:"#0ea5e9"}} onClick={() => window.location.href="/calculadora.html"}>📊 Calculadora 30 Casos</button>
-            </div>
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Solicitar Crédito</h2>
+          <p style={styles.sectionDesc}>Accede a créditos empresariales o de consumo con las mejores tasas.</p>
+          <div style={styles.btnRow}>
+            <button style={styles.btnPrimary} onClick={() => setModalOpen(true)}>+ Nueva Solicitud</button>
+            <button style={styles.btnSecondary} onClick={() => window.location.href="/mora"}>Ver Bandeja de Mora</button>
+            <button style={{...styles.btnSecondary, borderColor:"#0ea5e9", color:"#0ea5e9"}} onClick={() => window.location.href="/calculadora.html"}>📊 Calculadora 30 Casos</button>
+            <button style={{...styles.btnSecondary, borderColor:"#1e3a5f", color:"#1e3a5f"}} onClick={() => window.location.href="/core"}>🏦 Panel Core</button>
           </div>
-
-          {solicitudes.length > 0 && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Mis Solicitudes</h2>
-              {solicitudes.map((s, i) => (
-                <div key={i} style={styles.solicitudRow}>
-                  <div>
-                    <div style={styles.solicitudMonto}>S/ {s.monto}</div>
-                    <div style={styles.solicitudDetalle}>{s.plazo_meses} meses — TEA {s.tasa_anual}% — Cuota S/ {s.cuota_mensual}</div>
-                  </div>
-                  <span style={styles.estadoBadge}>{s.estado}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+
+        {solicitudes.length > 0 && (
+          <div style={styles.section}>
+            <h2 style={styles.sectionTitle}>Mis Solicitudes</h2>
+            {solicitudes.map((s, i) => (
+              <div key={i} style={styles.solicitudRow}>
+                <div>
+                  <div style={styles.solicitudMonto}>S/ {Number(s.monto).toFixed(2)}</div>
+                  <div style={styles.solicitudDetalle}>{s.plazo_meses} meses — TEA {s.tasa_anual}% — Cuota S/ {Number(s.cuota_mensual).toFixed(2)}</div>
+                </div>
+                <span style={{ padding:"5px 12px", borderRadius:20, fontSize:12, fontWeight:600, background: estadoBg[s.estado] || "#f1f5f9", color: estadoColor[s.estado] || "#64748b" }}>
+                  {s.estado}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -143,21 +160,13 @@ const styles = {
   cardLabel: { fontSize: 13, color: "#64748b", marginBottom: 6 },
   cardValue: { fontSize: 30, fontWeight: 800, color: "#0f172a", marginBottom: 4 },
   cardSub: { fontSize: 12, color: "#94a3b8" },
-  grid: { display: "flex", flexDirection: "column", gap: 20 },
-  section: { background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+  section: { background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", marginBottom: 20 },
   sectionTitle: { margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#0f172a" },
   sectionDesc: { color: "#64748b", fontSize: 14, marginBottom: 20 },
-  btnRow: { display: "flex", gap: 12 },
+  btnRow: { display: "flex", gap: 12, flexWrap: "wrap" },
   btnPrimary: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
   btnSecondary: { background: "#fff", color: "#1e3a5f", border: "2px solid #1e3a5f", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
   solicitudRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: "1px solid #f1f5f9" },
   solicitudMonto: { fontSize: 16, fontWeight: 700, color: "#0f172a" },
   solicitudDetalle: { fontSize: 12, color: "#64748b", marginTop: 2 },
-  estadoBadge: { background: "#fef9c3", color: "#854d0e", padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600 },
 };
-
-
-
-
-
-
