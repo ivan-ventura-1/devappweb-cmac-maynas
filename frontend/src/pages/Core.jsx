@@ -36,6 +36,7 @@ export default function Core() {
   const [gastoFamiliar, setGastoFamiliar] = useState("");
   const [vista, setVista] = useState("dashboard");
   const [mora, setMora] = useState([]);
+  const [cuentas, setCuentas] = useState([]);
 
   useEffect(() => { cargar(); }, []);
 
@@ -48,6 +49,12 @@ export default function Core() {
       .then(r => r.json())
       .then(d => { setSolicitudes(d.data || []); setLoading(false); })
       .catch(() => setLoading(false));
+    fetch("http://localhost:3000/api/ahorro/todas", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => setCuentas(d.data || []))
+      .catch(() => {});
     fetch("http://localhost:3000/api/mora/", {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -224,16 +231,35 @@ export default function Core() {
           </table>
         </div>
       );
-    }    if (vista === "ahorros") {
+    }        if (vista === "ahorros") {
       return (
-        <div style={styles.placeholder}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🏦</div>
-          <h3>Captaciones — Ahorros</h3>
-          <p>Módulo en construcción</p>
+        <div style={styles.tableCard}>
+          <div style={styles.tableHeader}><span style={styles.tableTitle}>Captaciones — Cuentas de Ahorro ({cuentas.length})</span></div>
+          <table style={styles.table}>
+            <thead>
+              <tr style={styles.thead}>
+                {["Cliente ID", "Saldo", "Meta Ahorro", "Tasa Interes", "Fecha Apertura"].map(h => (
+                  <th key={h} style={styles.th}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {cuentas.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>Sin cuentas registradas</td></tr>
+              ) : cuentas.map((c, i) => (
+                <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                  <td style={styles.td}>{c.user_id?.slice(0, 8)}...</td>
+                  <td style={{ ...styles.td, fontWeight: 700, color: "#059669" }}>S/ {Number(c.saldo).toFixed(2)}</td>
+                  <td style={styles.td}>S/ {Number(c.meta_ahorro).toFixed(2)}</td>
+                  <td style={styles.td}>{c.tasa_interes}%</td>
+                  <td style={{ ...styles.td, color: "#94a3b8", fontSize: 12 }}>{new Date(c.fecha_apertura).toLocaleDateString("es-PE")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       );
-    }
-    return null;
+    }    return null;
   };
 
   return (
@@ -330,6 +356,10 @@ const styles = {
   placeholder: { background: "#fff", borderRadius: 16, padding: 60, textAlign: "center", color: "#64748b", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
   btnPrimary: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer", marginTop: 16 },
 };
+
+
+
+
 
 
 
