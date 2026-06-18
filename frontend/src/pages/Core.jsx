@@ -1,5 +1,12 @@
 ﻿import { useEffect, useState } from "react";
 
+const bandaConfig = {
+  preventiva: { color: "#059669", bg: "#ecfdf5", icon: "🟢", label: "Preventiva" },
+  temprana:   { color: "#d97706", bg: "#fffbeb", icon: "🟡", label: "Temprana" },
+  tardia:     { color: "#dc2626", bg: "#fef2f2", icon: "🔴", label: "Tardia" },
+  judicial:   { color: "#7c3aed", bg: "#f5f3ff", icon: "⚖️", label: "Judicial" },
+  castigo:    { color: "#475569", bg: "#f8fafc", icon: "🚫", label: "Castigo" },
+};
 const estadoConfig = {
   pendiente:           { color: "#d97706", bg: "#fffbeb", label: "Pendiente" },
   en_evaluacion:        { color: "#0ea5e9", bg: "#e0f2fe", label: "En Evaluación" },
@@ -11,6 +18,15 @@ const estadoConfig = {
   desembolsado:         { color: "#1e3a5f", bg: "#e0f2fe", label: "Desembolsado" },
 };
 
+const TABS = [
+  { key: "dashboard", label: "Dashboard", icon: "📊" },
+  { key: "bandeja", label: "Bandeja de Solicitudes", icon: "📋" },
+  { key: "comite", label: "Propuesta y Comité", icon: "👥" },
+  { key: "desembolso", label: "Aprobación y Desembolso", icon: "💰" },
+  { key: "mora", label: "Mora y Recuperación", icon: "⚠️" },
+  { key: "ahorros", label: "Captaciones / Ahorros", icon: "🏦" },
+];
+
 export default function Core() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,10 +34,10 @@ export default function Core() {
   const [evalModal, setEvalModal] = useState(null);
   const [ingresoNeto, setIngresoNeto] = useState("");
   const [gastoFamiliar, setGastoFamiliar] = useState("");
+  const [vista, setVista] = useState("dashboard");
+  const [mora, setMora] = useState([]);
 
-  useEffect(() => {
-    cargar();
-  }, []);
+  useEffect(() => { cargar(); }, []);
 
   const cargar = () => {
     const token = localStorage.getItem("token");
@@ -32,6 +48,12 @@ export default function Core() {
       .then(r => r.json())
       .then(d => { setSolicitudes(d.data || []); setLoading(false); })
       .catch(() => setLoading(false));
+    fetch("http://localhost:3000/api/mora/", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(d => setMora(d.data || []))
+      .catch(() => {});
   };
 
   const handleEstado = async (solicitudId, estado) => {
@@ -50,24 +72,169 @@ export default function Core() {
     const res = await fetch("http://localhost:3000/api/credito/evaluacion", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        solicitudId: evalModal.id,
-        ingresoNeto: parseFloat(ingresoNeto),
-        gastoFamiliar: parseFloat(gastoFamiliar)
-      })
+      body: JSON.stringify({ solicitudId: evalModal.id, ingresoNeto: parseFloat(ingresoNeto), gastoFamiliar: parseFloat(gastoFamiliar) })
     });
     const data = await res.json();
-    if (data.success) {
-      setEvalModal(null);
-      setIngresoNeto("");
-      setGastoFamiliar("");
-      cargar();
-    }
+    if (data.success) { setEvalModal(null); setIngresoNeto(""); setGastoFamiliar(""); cargar(); }
   };
 
   const solicitudesFiltradas = filtro === "todos" ? solicitudes : solicitudes.filter(s => s.estado === filtro);
+  const pendientes = solicitudes.filter(s => s.estado === "pendiente");
+  const enComite = solicitudes.filter(s => s.estado === "en_comite" || s.estado === "aprobado_scoring");
+  const aprobadas = solicitudes.filter(s => s.estado === "aprobado");
+  const desembolsadas = solicitudes.filter(s => s.estado === "desembolsado");
 
   if (loading) return <div style={styles.loading}>Cargando...</div>;
+
+  const renderTabla = (lista) => (
+    <table style={styles.table}>
+      <thead>
+        <tr style={styles.thead}>
+          {["Cliente ID", "Monto", "Cuota", "RDS", "Score", "Estado", "Acciones"].map(h => (
+            <th key={h} style={styles.th}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {lista.length === 0 ? (
+          <tr><td colSpan={7} style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>Sin solicitudes</td></tr>
+        ) : lista.map((s, i) => {
+          const cfg = estadoConfig[s.estado] || estadoConfig.pendiente;
+          return (
+            <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+              <td style={styles.td}>{s.user_id?.slice(0, 8)}...</td>
+              <td style={{ ...styles.td, fontWeight: 700 }}>S/ {Number(s.monto).toFixed(2)}</td>
+              <td style={{ ...styles.td, color: "#059669" }}>S/ {Number(s.cuota_mensual).toFixed(2)}</td>
+              <td style={styles.td}>{s.rds != null ? `${s.rds}%` : "—"}</td>
+              <td style={styles.td}>{s.score != null ? s.score : "—"}</td>
+              <td style={styles.td}><span style={{ ...styles.badge, background: cfg.bg, color: cfg.color }}>{cfg.label}</span></td>
+              <td style={styles.td}>
+                <div style={styles.acciones}>
+                  {s.estado === "pendiente" && <button style={styles.btnEvaluarTbl} onClick={() => setEvalModal(s)}>Evaluar</button>}
+                  {(s.estado === "aprobado_scoring" || s.estado === "en_comite") && (
+                    <>
+                      <button style={styles.btnAprobar} onClick={() => handleEstado(s.id, "aprobado")}>✓ Aprobar</button>
+                      <button style={styles.btnRechazar} onClick={() => handleEstado(s.id, "rechazado")}>✗ Rechazar</button>
+                    </>
+                  )}
+                  {s.estado === "aprobado" && <button style={styles.btnDesembolsar} onClick={() => handleEstado(s.id, "desembolsado")}>💰 Desembolsar</button>}
+                  {["rechazado", "rechazado_automatico", "desembolsado"].includes(s.estado) && <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>}
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
+  const renderContenido = () => {
+    if (vista === "dashboard") {
+      return (
+        <>
+          <div style={styles.kpiRow}>
+            {[
+              { label: "Total Solicitudes", value: solicitudes.length, color: "#1e3a5f", icon: "📋" },
+              { label: "Pendientes", value: pendientes.length, color: "#d97706", icon: "⏳" },
+              { label: "En Comité", value: enComite.length, color: "#7c3aed", icon: "👥" },
+              { label: "Desembolsadas", value: desembolsadas.length, color: "#059669", icon: "💰" },
+            ].map((k, i) => (
+              <div key={i} style={styles.kpiCard}>
+                <div style={{ ...styles.kpiIcon, background: k.color + "15", color: k.color }}>{k.icon}</div>
+                <div style={styles.kpiValue}>{k.value}</div>
+                <div style={styles.kpiLabel}>{k.label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={styles.tableCard}>
+            <div style={styles.tableHeader}><span style={styles.tableTitle}>Últimas solicitudes</span></div>
+            {renderTabla(solicitudes.slice(0, 5))}
+          </div>
+        </>
+      );
+    }
+    if (vista === "bandeja") {
+      return (
+        <div style={styles.tableCard}>
+          <div style={styles.tableHeader}><span style={styles.tableTitle}>Bandeja de Solicitudes</span></div>
+          <div style={{ padding: "16px 20px 0" }}>
+            <div style={styles.filtros}>
+              {["todos", "pendiente", "en_evaluacion", "rechazado_automatico", "aprobado_scoring", "en_comite", "aprobado", "desembolsado"].map(f => (
+                <button key={f} style={{ ...styles.filtroBtn, ...(filtro === f ? styles.filtroActivo : {}) }} onClick={() => setFiltro(f)}>
+                  {f === "todos" ? "Todos" : estadoConfig[f]?.label} ({f === "todos" ? solicitudes.length : solicitudes.filter(s => s.estado === f).length})
+                </button>
+              ))}
+            </div>
+          </div>
+          {renderTabla(solicitudesFiltradas)}
+        </div>
+      );
+    }
+    if (vista === "comite") {
+      return (
+        <div style={styles.tableCard}>
+          <div style={styles.tableHeader}><span style={styles.tableTitle}>Propuesta y Comité — pendientes de resolución</span></div>
+          {renderTabla(enComite)}
+        </div>
+      );
+    }
+    if (vista === "desembolso") {
+      return (
+        <div style={styles.tableCard}>
+          <div style={styles.tableHeader}><span style={styles.tableTitle}>Aprobación y Desembolso</span></div>
+          {renderTabla(aprobadas)}
+        </div>
+      );
+    }
+        if (vista === "mora") {
+      return (
+        <div style={styles.tableCard}>
+          <div style={styles.tableHeader}><span style={styles.tableTitle}>Bandeja de Mora — {mora.length} créditos</span></div>
+          <div style={{ padding: "16px 20px 0", display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {Object.entries(bandaConfig).map(([b, cfg]) => (
+              <div key={b} style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: cfg.bg, color: cfg.color }}>
+                {cfg.icon} {cfg.label}: {mora.filter(m => m.banda === b).length}
+              </div>
+            ))}
+          </div>
+          <table style={styles.table}>
+            <thead>
+              <tr style={styles.thead}>
+                {["Banda", "Dias Mora", "Monto Deuda", "Estado", "Observaciones"].map(h => (
+                  <th key={h} style={styles.th}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {mora.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>Sin registros de mora</td></tr>
+              ) : mora.map((m, i) => {
+                const cfg = bandaConfig[m.banda] || bandaConfig.preventiva;
+                return (
+                  <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                    <td style={styles.td}><span style={{ ...styles.badge, background: cfg.bg, color: cfg.color }}>{cfg.icon} {m.banda}</span></td>
+                    <td style={{ ...styles.td, fontWeight: 700, color: cfg.color }}>{m.dias_mora}</td>
+                    <td style={styles.td}>S/ {Number(m.monto_deuda).toFixed(2)}</td>
+                    <td style={styles.td}>{m.estado_gestion}</td>
+                    <td style={styles.td}>{m.observaciones || "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    }    if (vista === "ahorros") {
+      return (
+        <div style={styles.placeholder}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🏦</div>
+          <h3>Captaciones — Ahorros</h3>
+          <p>Módulo en construcción</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div style={styles.page}>
@@ -92,8 +259,8 @@ export default function Core() {
         </div>
       )}
 
-      <div style={styles.topBar}>
-        <div style={styles.topLeft}>
+      <nav style={styles.nav}>
+        <div style={styles.navLeft}>
           <div style={styles.logo}>CM</div>
           <div>
             <div style={styles.logoName}>CMAC Maynas</div>
@@ -101,93 +268,45 @@ export default function Core() {
           </div>
         </div>
         <button style={styles.btnVolver} onClick={() => window.location.href="/dashboard"}>← Dashboard</button>
+      </nav>
+
+      <div style={styles.tabsBar}>
+        {TABS.map(t => (
+          <button key={t.key} style={{ ...styles.tabBtn, ...(vista === t.key ? styles.tabBtnActive : {}) }} onClick={() => setVista(t.key)}>
+            <span style={{ marginRight: 6 }}>{t.icon}</span>{t.label}
+          </button>
+        ))}
       </div>
 
-      <div style={styles.hero}>
-        <h1 style={styles.heroTitle}>Bandeja de Solicitudes</h1>
-        <p style={styles.heroSub}>{solicitudes.length} solicitudes en el sistema</p>
-      </div>
-
-      <div style={styles.content}>
-        <div style={styles.filtros}>
-          {["todos", "pendiente", "en_evaluacion", "rechazado_automatico", "aprobado_scoring", "en_comite", "aprobado", "desembolsado"].map(f => (
-            <button key={f} style={{ ...styles.filtroBtn, ...(filtro === f ? styles.filtroActivo : {}) }} onClick={() => setFiltro(f)}>
-              {f === "todos" ? "Todos" : estadoConfig[f]?.label} ({f === "todos" ? solicitudes.length : solicitudes.filter(s => s.estado === f).length})
-            </button>
-          ))}
-        </div>
-
-        <div style={styles.tableCard}>
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.thead}>
-                {["Cliente ID", "Monto", "Cuota", "RDS", "Score", "Estado", "Acciones"].map(h => (
-                  <th key={h} style={styles.th}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {solicitudesFiltradas.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>Sin solicitudes</td></tr>
-              ) : solicitudesFiltradas.map((s, i) => {
-                const cfg = estadoConfig[s.estado] || estadoConfig.pendiente;
-                return (
-                  <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
-                    <td style={styles.td}>{s.user_id?.slice(0, 8)}...</td>
-                    <td style={{ ...styles.td, fontWeight: 700 }}>S/ {Number(s.monto).toFixed(2)}</td>
-                    <td style={{ ...styles.td, color: "#059669" }}>S/ {Number(s.cuota_mensual).toFixed(2)}</td>
-                    <td style={styles.td}>{s.rds != null ? `${s.rds}%` : "—"}</td>
-                    <td style={styles.td}>{s.score != null ? s.score : "—"}</td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.badge, background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={styles.acciones}>
-                        {s.estado === "pendiente" && (
-                          <button style={styles.btnEvaluarTbl} onClick={() => setEvalModal(s)}>Evaluar</button>
-                        )}
-                        {(s.estado === "aprobado_scoring" || s.estado === "en_comite") && (
-                          <>
-                            <button style={styles.btnAprobar} onClick={() => handleEstado(s.id, "aprobado")}>✓ Aprobar</button>
-                            <button style={styles.btnRechazar} onClick={() => handleEstado(s.id, "rechazado")}>✗ Rechazar</button>
-                          </>
-                        )}
-                        {s.estado === "aprobado" && (
-                          <button style={styles.btnDesembolsar} onClick={() => handleEstado(s.id, "desembolsado")}>💰 Desembolsar</button>
-                        )}
-                        {["rechazado", "rechazado_automatico", "desembolsado"].includes(s.estado) && (
-                          <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <div style={styles.content}>{renderContenido()}</div>
     </div>
   );
 }
 
 const styles = {
   page: { minHeight: "100vh", background: "#f8f9ff", fontFamily: "'Segoe UI', sans-serif" },
-  topBar: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 48px", background: "#fff", boxShadow: "0 1px 0 #e5e7eb" },
-  topLeft: { display: "flex", alignItems: "center", gap: 12 },
+  nav: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 48px", background: "#fff", boxShadow: "0 1px 0 #e5e7eb" },
+  navLeft: { display: "flex", alignItems: "center", gap: 12 },
   logo: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", fontWeight: 800, fontSize: 18, borderRadius: 10, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center" },
   logoName: { fontWeight: 700, fontSize: 16, color: "#1e3a5f" },
   logoSub: { fontSize: 11, color: "#64748b" },
   btnVolver: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "10px 20px", cursor: "pointer", fontSize: 14, fontWeight: 600 },
-  hero: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", padding: "40px 48px", color: "#fff" },
-  heroTitle: { margin: 0, fontSize: 32, fontWeight: 800 },
-  heroSub: { margin: "8px 0 0", opacity: 0.85, fontSize: 15 },
-  content: { padding: "32px 48px" },
-  filtros: { display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" },
-  filtroBtn: { padding: "8px 16px", borderRadius: 20, border: "1.5px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "#64748b" },
+  tabsBar: { display: "flex", gap: 8, padding: "16px 48px", background: "#fff", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap" },
+  tabBtn: { padding: "10px 18px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#64748b" },
+  tabBtnActive: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", borderColor: "transparent" },
+  content: { padding: "28px 48px" },
+  kpiRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 },
+  kpiCard: { background: "#fff", borderRadius: 14, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+  kpiIcon: { width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, marginBottom: 12 },
+  kpiValue: { fontSize: 26, fontWeight: 800, color: "#0f172a" },
+  kpiLabel: { fontSize: 12, color: "#64748b", marginTop: 2 },
+  filtros: { display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" },
+  filtroBtn: { padding: "6px 14px", borderRadius: 20, border: "1.5px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 500, color: "#64748b" },
   filtroActivo: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", borderColor: "transparent" },
   tableCard: { background: "#fff", borderRadius: 16, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" },
-  table: { width: "100%", borderCollapse: "collapse" },
+  tableHeader: { padding: "16px 20px 0" },
+  tableTitle: { fontSize: 15, fontWeight: 700, color: "#0f172a" },
+  table: { width: "100%", borderCollapse: "collapse", marginTop: 12 },
   thead: { background: "#f8fafc" },
   th: { padding: "12px 16px", textAlign: "left", color: "#64748b", fontSize: 12, fontWeight: 600, borderBottom: "1px solid #f1f5f9" },
   td: { padding: "14px 16px", fontSize: 13, borderBottom: "1px solid #f1f5f9", color: "#374151" },
@@ -208,4 +327,10 @@ const styles = {
   modalBtns: { display: "flex", gap: 10, marginTop: 8 },
   btnCancel: { flex: 1, padding: "11px 0", borderRadius: 8, border: "1.5px solid #e2e8f0", background: "#fff", cursor: "pointer", fontSize: 14 },
   btnEval: { flex: 1, padding: "11px 0", borderRadius: 8, border: "none", background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600 },
+  placeholder: { background: "#fff", borderRadius: 16, padding: 60, textAlign: "center", color: "#64748b", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+  btnPrimary: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer", marginTop: 16 },
 };
+
+
+
+
