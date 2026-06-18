@@ -7,6 +7,7 @@ export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [solicitudes, setSolicitudes] = useState([]);
   const [exito, setExito] = useState(null);
+  const [cuentaAhorro, setCuentaAhorro] = useState(null);
 
   useEffect(() => {
     const u = localStorage.getItem("usuario");
@@ -21,11 +22,18 @@ export default function Dashboard() {
       const parsed = JSON.parse(u);
       setUsuario(parsed);
       setUserId(parsed.id);
-      if (parsed.id && token) cargarSolicitudes(parsed.id, token);
+      if (parsed.id && token) { cargarSolicitudes(parsed.id, token); cargarAhorro(parsed.id, token); }
     } catch(e) {
       setUsuario({ email: "cliente@cmac.com", nombre: "Cliente" });
     }
   }, []);
+
+  const cargarAhorro = (uid, token) => {
+    fetch(`http://localhost:3000/api/ahorro/cuenta/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.success) setCuentaAhorro(d.data); })
+      .catch(() => {});
+  };
 
   const cargarSolicitudes = (uid, token) => {
     fetch(`http://localhost:3000/api/credito/solicitudes/${uid}`, {
@@ -92,7 +100,7 @@ export default function Dashboard() {
 
         <div style={styles.cards}>
           {[
-            { label: "Cuenta de Ahorros", value: "S/ 0.00", sub: "Saldo disponible", icon: "🏦", color: "#0ea5e9" },
+            { label: "Cuenta de Ahorros", value: `S/ ${Number(cuentaAhorro?.saldo || 0).toFixed(2)}`, sub: cuentaAhorro ? "Saldo disponible" : "Sin cuenta de ahorros", icon: "🏦", color: "#0ea5e9" },
             { label: "Créditos Activos", value: solicitudes.filter(s => s.estado !== "rechazado").length.toString(), sub: "Solicitudes activas", icon: "📋", color: "#8b5cf6" },
             { label: "Próxima Cuota", value: `S/ ${solicitudes.find(s => s.estado === "desembolsado")?.cuota_mensual || solicitudes[0]?.cuota_mensual || "0.00"}`, sub: solicitudes.length ? "Ver detalle abajo" : "Sin cuotas pendientes", icon: "📅", color: "#059669" },
           ].map((c, i) => (
@@ -170,3 +178,7 @@ const styles = {
   solicitudMonto: { fontSize: 16, fontWeight: 700, color: "#0f172a" },
   solicitudDetalle: { fontSize: 12, color: "#64748b", marginTop: 2 },
 };
+
+
+
+
