@@ -8,8 +8,9 @@ export default function Dashboard() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [exito, setExito] = useState(null);
   const [cuentaAhorro, setCuentaAhorro] = useState(null);
-
-  useEffect(() => {
+  const [depositoModal, setDepositoModal] = useState(false);
+  const [montoDeposito, setMontoDeposito] = useState("");
+useEffect(() => {
     const u = localStorage.getItem("usuario");
     const token = localStorage.getItem("token");
     if (!u || u === "undefined") {
@@ -27,6 +28,17 @@ export default function Dashboard() {
       setUsuario({ email: "cliente@cmac.com", nombre: "Cliente" });
     }
   }, []);
+
+  const handleDeposito = async () => {
+    const token = localStorage.getItem("token");
+    const res = await fetch("http://localhost:3000/api/ahorro/depositar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ userId, monto: parseFloat(montoDeposito) })
+    });
+    const data = await res.json();
+    if (data.success) { setCuentaAhorro(data.data); setDepositoModal(false); setMontoDeposito(""); }
+  };
 
   const cargarAhorro = (uid, token) => {
     fetch(`http://localhost:3000/api/ahorro/cuenta/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -61,8 +73,26 @@ export default function Dashboard() {
 
   if (!usuario) return <div style={{padding:32,color:"#64748b"}}>Cargando...</div>;
 
+  const ModalDeposito = () => (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}} onClick={(e) => e.target === e.currentTarget && setDepositoModal(false)}>
+      <div style={{background:"#fff",borderRadius:16,padding:28,width:360,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+        <h3 style={{margin:"0 0 4px",fontSize:18,color:"#0f172a"}}>Depositar a mi cuenta</h3>
+        <p style={{color:"#64748b",fontSize:13,marginBottom:20}}>Saldo actual: S/ {Number(cuentaAhorro?.saldo || 0).toFixed(2)}</p>
+        <div style={{marginBottom:16}}>
+          <label style={{display:"block",fontSize:13,fontWeight:500,color:"#374151",marginBottom:6}}>Monto a depositar (S/)</label>
+          <input type="number" style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid #e2e8f0",fontSize:14}} value={montoDeposito} onChange={(e) => setMontoDeposito(e.target.value)} placeholder="Ej: 100" />
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button style={{flex:1,padding:"11px 0",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:14}} onClick={() => setDepositoModal(false)}>Cancelar</button>
+          <button style={{flex:1,padding:"11px 0",borderRadius:8,border:"none",background:"linear-gradient(135deg, #1e3a5f, #0ea5e9)",color:"#fff",cursor:"pointer",fontSize:14,fontWeight:600}} onClick={handleDeposito} disabled={!montoDeposito}>Depositar</button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div style={styles.page}>
+      {depositoModal && <ModalDeposito />}
       {modalOpen && <ModalSolicitud onClose={() => setModalOpen(false)} userId={userId || "a8e4b064-ca59-464e-9f69-baa40e1a529f"} onExito={handleExito} />}
 
       <nav style={styles.nav}>
@@ -118,6 +148,7 @@ export default function Dashboard() {
           <p style={styles.sectionDesc}>Accede a créditos empresariales o de consumo con las mejores tasas.</p>
           <div style={styles.btnRow}>
             <button style={styles.btnPrimary} onClick={() => setModalOpen(true)}>+ Nueva Solicitud</button>
+            <button style={{...styles.btnSecondary, borderColor: "#059669", color: "#059669"}} onClick={() => setDepositoModal(true)}>+ Depositar Ahorro</button>
             <button style={styles.btnSecondary} onClick={() => window.location.href="/mora"}>Ver Bandeja de Mora</button>
             <button style={{...styles.btnSecondary, borderColor:"#0ea5e9", color:"#0ea5e9"}} onClick={() => window.location.href="/calculadora.html"}>📊 Calculadora 30 Casos</button>
             <button style={{...styles.btnSecondary, borderColor:"#1e3a5f", color:"#1e3a5f"}} onClick={() => window.location.href="/core"}>🏦 Panel Core</button>
@@ -178,6 +209,16 @@ const styles = {
   solicitudMonto: { fontSize: 16, fontWeight: 700, color: "#0f172a" },
   solicitudDetalle: { fontSize: 12, color: "#64748b", marginTop: 2 },
 };
+
+
+
+
+
+
+
+
+
+
 
 
 
