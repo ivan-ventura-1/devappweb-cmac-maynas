@@ -151,7 +151,7 @@ useEffect(() => {
             <button style={{...styles.btnSecondary, borderColor: "#059669", color: "#059669"}} onClick={() => setDepositoModal(true)}>+ Depositar Ahorro</button>
             <button style={styles.btnSecondary} onClick={() => window.location.href="/mora"}>Ver Bandeja de Mora</button>
             <button style={{...styles.btnSecondary, borderColor:"#0ea5e9", color:"#0ea5e9"}} onClick={() => window.location.href="/calculadora.html"}>📊 Calculadora 30 Casos</button>
-            <button style={{...styles.btnSecondary, borderColor:"#1e3a5f", color:"#1e3a5f"}} onClick={() => window.location.href="/core"}>🏦 Panel Core</button>
+            <button style={{...styles.btnSecondary, borderColor:"#1e3a5f", color:"#1e3a5f"}} onClick={() => window.location.href="/core"}>🏦 Panel Core</button><button style={{...styles.btnSecondary, borderColor:"#8b5cf6", color:"#8b5cf6"}} onClick={() => window.location.href="/movimientos"}>Ver Movimientos</button>
           </div>
         </div>
 
@@ -209,17 +209,3 @@ const styles = {
   solicitudMonto: { fontSize: 16, fontWeight: 700, color: "#0f172a" },
   solicitudDetalle: { fontSize: 12, color: "#64748b", marginTop: 2 },
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-

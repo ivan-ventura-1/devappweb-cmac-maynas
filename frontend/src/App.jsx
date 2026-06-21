@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Mora from "./pages/Mora";
 import Calculadora from "./pages/Calculadora";
 import Core from "./pages/Core";
+import Movimientos from "./pages/Movimientos";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/mora" element={<Mora />} />
         <Route path="/calculadora" element={<Calculadora />} />
         <Route path="/core" element={<Core />} />
+        <Route path="/movimientos" element={<Movimientos />} />
       </Routes>
     </BrowserRouter>
   );
