@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import ModalSolicitud from "../components/ModalSolicitud";
 
+
 export default function Dashboard() {
   const [usuario, setUsuario] = useState(null);
   const [userId, setUserId] = useState(null);
@@ -10,24 +11,39 @@ export default function Dashboard() {
   const [cuentaAhorro, setCuentaAhorro] = useState(null);
   const [depositoModal, setDepositoModal] = useState(false);
   const [montoDeposito, setMontoDeposito] = useState("");
-useEffect(() => {
+  const [movimientos, setMovimientos] = useState([]);
+
+  useEffect(() => {
     const u = localStorage.getItem("usuario");
     const token = localStorage.getItem("token");
     if (!u || u === "undefined") {
       setUsuario({ email: "cliente@cmac.com", nombre: "Cliente" });
       setUserId("a8e4b064-ca59-464e-9f69-baa40e1a529f");
       cargarSolicitudes("a8e4b064-ca59-464e-9f69-baa40e1a529f", token);
+      cargarAhorro("a8e4b064-ca59-464e-9f69-baa40e1a529f", token);
+      cargarMovimientos("a8e4b064-ca59-464e-9f69-baa40e1a529f", token);
       return;
     }
     try {
       const parsed = JSON.parse(u);
       setUsuario(parsed);
       setUserId(parsed.id);
-      if (parsed.id && token) { cargarSolicitudes(parsed.id, token); cargarAhorro(parsed.id, token); }
+      if (parsed.id && token) {
+        cargarSolicitudes(parsed.id, token);
+        cargarAhorro(parsed.id, token);
+        cargarMovimientos(parsed.id, token);
+      }
     } catch(e) {
       setUsuario({ email: "cliente@cmac.com", nombre: "Cliente" });
     }
   }, []);
+
+  const cargarMovimientos = (uid, token) => {
+    fetch(`http://localhost:3000/api/movimientos/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => { if (d.success) setMovimientos(d.data || []); })
+      .catch(() => {});
+  };
 
   const handleDeposito = async () => {
     const token = localStorage.getItem("token");
@@ -48,9 +64,7 @@ useEffect(() => {
   };
 
   const cargarSolicitudes = (uid, token) => {
-    fetch(`http://localhost:3000/api/credito/solicitudes/${uid}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    fetch(`http://localhost:3000/api/credito/solicitudes/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { if (d.success) setSolicitudes(d.data || []); })
       .catch(() => {});
@@ -68,8 +82,23 @@ useEffect(() => {
     window.location.href = "/";
   };
 
-  const estadoColor = { pendiente: "#d97706", aprobado: "#059669", rechazado: "#dc2626", desembolsado: "#1e3a5f" };
-  const estadoBg = { pendiente: "#fffbeb", aprobado: "#ecfdf5", rechazado: "#fef2f2", desembolsado: "#e0f2fe" };
+  const estadoColor = { pendiente: "#d97706", aprobado: "#059669", rechazado: "#dc2626", desembolsado: "#1e3a5f", aprobado_scoring: "#7c3aed", en_comite: "#f59e0b" };
+  const estadoBg = { pendiente: "#fffbeb", aprobado: "#ecfdf5", rechazado: "#fef2f2", desembolsado: "#e0f2fe", aprobado_scoring: "#f5f3ff", en_comite: "#fef3c7" };
+
+  // Datos para gráficos
+  const dataPie = [
+    { name: "Desembolsado", value: solicitudes.filter(s => s.estado === "desembolsado").length, color: "#1e3a5f" },
+    { name: "Aprobado", value: solicitudes.filter(s => s.estado === "aprobado" || s.estado === "aprobado_scoring").length, color: "#059669" },
+    { name: "Pendiente", value: solicitudes.filter(s => s.estado === "pendiente").length, color: "#d97706" },
+    { name: "Rechazado", value: solicitudes.filter(s => s.estado === "rechazado").length, color: "#dc2626" },
+  ].filter(d => d.value > 0);
+
+  const dataBar = [
+    { name: "Depósitos", monto: movimientos.filter(m => m.tipo === "deposito").reduce((a, m) => a + Number(m.monto), 0) },
+    { name: "Créditos", monto: movimientos.filter(m => m.tipo === "credito").reduce((a, m) => a + Number(m.monto), 0) },
+    { name: "Pagos", monto: movimientos.filter(m => m.tipo === "pago_cuota").reduce((a, m) => a + Number(m.monto), 0) },
+    { name: "Retiros", monto: movimientos.filter(m => m.tipo === "retiro").reduce((a, m) => a + Number(m.monto), 0) },
+  ];
 
   if (!usuario) return <div style={{padding:32,color:"#64748b"}}>Cargando...</div>;
 
@@ -115,10 +144,8 @@ useEffect(() => {
       </nav>
 
       <div style={styles.hero}>
-        <div>
-          <h1 style={styles.heroTitle}>Bienvenido, {usuario.nombre || usuario.email} 👋</h1>
-          <p style={styles.heroSub}>Aquí tienes un resumen de tu actividad financiera</p>
-        </div>
+        <h1 style={styles.heroTitle}>Bienvenido, {usuario.nombre || usuario.email} 👋</h1>
+        <p style={styles.heroSub}>Aquí tienes un resumen de tu actividad financiera</p>
       </div>
 
       <div style={styles.content}>
@@ -130,9 +157,9 @@ useEffect(() => {
 
         <div style={styles.cards}>
           {[
-            { label: "Cuenta de Ahorros", value: `S/ ${Number(cuentaAhorro?.saldo || 0).toFixed(2)}`, sub: cuentaAhorro ? "Saldo disponible" : "Sin cuenta de ahorros", icon: "🏦", color: "#0ea5e9" },
+            { label: "Cuenta de Ahorros", value: `S/ ${Number(cuentaAhorro?.saldo || 0).toFixed(2)}`, sub: cuentaAhorro ? "Saldo disponible" : "Sin cuenta", icon: "🏦", color: "#0ea5e9" },
             { label: "Créditos Activos", value: solicitudes.filter(s => s.estado !== "rechazado").length.toString(), sub: "Solicitudes activas", icon: "📋", color: "#8b5cf6" },
-            { label: "Próxima Cuota", value: `S/ ${solicitudes.find(s => s.estado === "desembolsado")?.cuota_mensual || solicitudes[0]?.cuota_mensual || "0.00"}`, sub: solicitudes.length ? "Ver detalle abajo" : "Sin cuotas pendientes", icon: "📅", color: "#059669" },
+            { label: "Próxima Cuota", value: `S/ ${solicitudes.find(s => s.estado === "desembolsado")?.cuota_mensual || solicitudes[0]?.cuota_mensual || "0.00"}`, sub: solicitudes.length ? "Ver detalle abajo" : "Sin cuotas", icon: "📅", color: "#059669" },
           ].map((c, i) => (
             <div key={i} style={styles.card}>
               <div style={{ ...styles.cardIcon, background: c.color + "15", color: c.color }}>{c.icon}</div>
@@ -143,15 +170,54 @@ useEffect(() => {
           ))}
         </div>
 
+        <div style={styles.chartsRow}>
+  <div style={styles.chartCard}>
+    <h3 style={styles.chartTitle}>Estado de Solicitudes</h3>
+    <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
+      {[
+        {label:"Desembolsado",count:solicitudes.filter(s=>s.estado==="desembolsado").length,color:"#1e3a5f"},
+        {label:"Aprobado",count:solicitudes.filter(s=>s.estado==="aprobado"||s.estado==="aprobado_scoring").length,color:"#059669"},
+        {label:"Pendiente",count:solicitudes.filter(s=>s.estado==="pendiente").length,color:"#d97706"},
+        {label:"Rechazado",count:solicitudes.filter(s=>s.estado==="rechazado").length,color:"#dc2626"},
+      ].map((item,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:12,height:12,borderRadius:"50%",background:item.color,flexShrink:0}}></div>
+          <div style={{flex:1,fontSize:13,color:"#374151"}}>{item.label}</div>
+          <div style={{width:`${Math.min(item.count*40,160)}px`,height:18,background:item.color,borderRadius:4,opacity:0.7,minWidth:4}}></div>
+          <div style={{fontSize:13,fontWeight:700,color:item.color,minWidth:24}}>{item.count}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+  <div style={styles.chartCard}>
+    <h3 style={styles.chartTitle}>Resumen de Movimientos (S/)</h3>
+    <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
+      {[
+        {label:"Depósitos",monto:movimientos.filter(m=>m.tipo==="deposito").reduce((a,m)=>a+Number(m.monto),0),color:"#059669"},
+        {label:"Créditos",monto:movimientos.filter(m=>m.tipo==="credito").reduce((a,m)=>a+Number(m.monto),0),color:"#1e3a5f"},
+        {label:"Pagos Cuota",monto:movimientos.filter(m=>m.tipo==="pago_cuota").reduce((a,m)=>a+Number(m.monto),0),color:"#d97706"},
+        {label:"Retiros",monto:movimientos.filter(m=>m.tipo==="retiro").reduce((a,m)=>a+Number(m.monto),0),color:"#dc2626"},
+      ].map((item,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:12,height:12,borderRadius:"50%",background:item.color,flexShrink:0}}></div>
+          <div style={{flex:1,fontSize:13,color:"#374151"}}>{item.label}</div>
+          <div style={{width:`${Math.min(item.monto/40,160)}px`,height:18,background:item.color,borderRadius:4,opacity:0.7,minWidth:4}}></div>
+          <div style={{fontSize:13,fontWeight:700,color:item.color,minWidth:80}}>S/ {item.monto.toFixed(0)}</div>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
         <div style={styles.section}>
-          <h2 style={styles.sectionTitle}>Solicitar Crédito</h2>
-          <p style={styles.sectionDesc}>Accede a créditos empresariales o de consumo con las mejores tasas.</p>
+          <h2 style={styles.sectionTitle}>Acciones Rápidas</h2>
           <div style={styles.btnRow}>
             <button style={styles.btnPrimary} onClick={() => setModalOpen(true)}>+ Nueva Solicitud</button>
-            <button style={{...styles.btnSecondary, borderColor: "#059669", color: "#059669"}} onClick={() => setDepositoModal(true)}>+ Depositar Ahorro</button>
-            <button style={styles.btnSecondary} onClick={() => window.location.href="/mora"}>Ver Bandeja de Mora</button>
-            <button style={{...styles.btnSecondary, borderColor:"#0ea5e9", color:"#0ea5e9"}} onClick={() => window.location.href="/calculadora.html"}>📊 Calculadora 30 Casos</button>
-            <button style={{...styles.btnSecondary, borderColor:"#1e3a5f", color:"#1e3a5f"}} onClick={() => window.location.href="/core"}>🏦 Panel Core</button><button style={{...styles.btnSecondary, borderColor:"#8b5cf6", color:"#8b5cf6"}} onClick={() => window.location.href="/movimientos"}>Ver Movimientos</button>
+            <button style={{...styles.btnSecondary, borderColor:"#059669", color:"#059669"}} onClick={() => setDepositoModal(true)}>+ Depositar Ahorro</button>
+            <button style={styles.btnSecondary} onClick={() => window.location.href="/mora"}>Ver Mora</button>
+            <button style={{...styles.btnSecondary, borderColor:"#0ea5e9", color:"#0ea5e9"}} onClick={() => window.location.href="/calculadora.html"}>Calculadora</button>
+            <button style={{...styles.btnSecondary, borderColor:"#1e3a5f", color:"#1e3a5f"}} onClick={() => window.location.href="/core"}>Panel Core</button>
+            <button style={{...styles.btnSecondary, borderColor:"#8b5cf6", color:"#8b5cf6"}} onClick={() => window.location.href="/movimientos"}>Ver Movimientos</button>
           </div>
         </div>
 
@@ -199,6 +265,9 @@ const styles = {
   cardLabel: { fontSize: 13, color: "#64748b", marginBottom: 6 },
   cardValue: { fontSize: 30, fontWeight: 800, color: "#0f172a", marginBottom: 4 },
   cardSub: { fontSize: 12, color: "#94a3b8" },
+  chartsRow: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 },
+  chartCard: { background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", minHeight: 280 },
+  chartTitle: { margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: "#0f172a" },
   section: { background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", marginBottom: 20 },
   sectionTitle: { margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#0f172a" },
   sectionDesc: { color: "#64748b", fontSize: 14, marginBottom: 20 },
@@ -209,3 +278,6 @@ const styles = {
   solicitudMonto: { fontSize: 16, fontWeight: 700, color: "#0f172a" },
   solicitudDetalle: { fontSize: 12, color: "#64748b", marginTop: 2 },
 };
+
+
+
