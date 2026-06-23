@@ -1,0 +1,63 @@
+@startuml 03_componentes
+!theme plain
+title CMAC Maynas — Arquitectura de Componentes
+
+package "Frontend React + Vite :5173" {
+  [Landing Page]
+  [LoginModal]
+  [Dashboard]
+  [Mora R1-R2-R3]
+  [Calculadora 30 casos]
+  [ModalSolicitud]
+}
+
+package "Backend Node.js + Express :3000" {
+  package "Routes" {
+    [authRoutes]
+    [creditoRoutes]
+    [moraRoutes]
+  }
+  package "Controllers" {
+    [authController]
+    [creditoController]
+    [moraController]
+  }
+  package "Services" {
+    [authService]
+    [creditoService]
+    [moraService]
+  }
+  package "Repositories" {
+    [authRepository]
+  }
+  package "Middleware" {
+    [authMiddleware\nJWT + RBAC]
+  }
+}
+
+package "Supabase (PostgreSQL)" {
+  database "solicitudes_prestamo"
+  database "mora_creditos"
+  database "roles_usuario"
+  database "auth.users"
+}
+
+[LoginModal] --> [authRoutes]
+[ModalSolicitud] --> [creditoRoutes]
+[Mora R1-R2-R3] --> [moraRoutes]
+
+[authRoutes] --> [authController]
+[creditoRoutes] --> [creditoController]
+[moraRoutes] --> [moraController]
+
+[authController] --> [authService]
+[creditoController] --> [creditoService]
+[moraController] --> [moraService]
+
+[authService] --> [authRepository]
+[authRepository] --> "auth.users"
+[creditoService] --> "solicitudes_prestamo"
+[moraService] --> "mora_creditos"
+[authMiddleware\nJWT + RBAC] --> "roles_usuario"
+
+@enduml

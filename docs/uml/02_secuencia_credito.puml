@@ -1,0 +1,40 @@
+@startuml 02_secuencia_credito
+!theme plain
+title Flujo de Solicitud de Credito - CMAC Maynas
+
+actor "Cliente" as CLI
+participant "Homebanking\n:8173" as HB
+participant "Backend Node.js\n:3000" as API
+participant "Supabase\nPostgreSQL" as DB
+actor "Asesor" as ASE
+actor "Comite" as COM
+
+CLI -> HB: Inicia sesion
+HB -> API: POST /api/auth/login
+API -> DB: signInWithPassword
+DB --> API: JWT token + usuario
+API --> HB: token + usuario
+HB --> CLI: Redirige a Dashboard
+
+CLI -> HB: Nueva Solicitud de Credito
+HB -> API: POST /api/credito/solicitar\n+ Bearer token
+API -> API: Calcula cuota\n(TEA 40.92% o 43.92%)
+API -> DB: INSERT solicitudes_prestamo
+DB --> API: solicitud creada
+API --> HB: cuota_mensual + estado
+HB --> CLI: Solicitud enviada exitosamente
+
+ASE -> API: GET /api/mora/\n+ Bearer token (rol: asesor)
+API -> DB: SELECT mora_creditos
+DB --> API: registros de mora
+API --> ASE: bandas R1/R2/R3
+
+ASE -> API: POST /api/mora/gestion
+API -> DB: UPDATE estado_gestion
+DB --> API: gestion registrada
+
+COM -> API: POST /api/mora/judicial\n(rol: comite)
+API -> DB: UPDATE banda = judicial
+DB --> API: credito derivado
+
+@enduml

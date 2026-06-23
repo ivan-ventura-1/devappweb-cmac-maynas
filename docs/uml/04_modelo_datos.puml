@@ -1,0 +1,51 @@
+@startuml 04_modelo_datos
+!theme plain
+title CMAC Maynas — Modelo de Datos
+
+entity "auth.users" as USR {
+  * id : UUID
+  --
+  email : TEXT
+  created_at : TIMESTAMPTZ
+}
+
+entity "roles_usuario" as ROL {
+  * id : UUID
+  --
+  * user_id : UUID <<FK>>
+  * rol : TEXT
+  created_at : TIMESTAMPTZ
+}
+
+entity "solicitudes_prestamo" as SOL {
+  * id : UUID
+  --
+  * user_id : UUID <<FK>>
+  * monto : NUMERIC(12,2)
+  * plazo_meses : INTEGER
+  * tasa_anual : NUMERIC(6,4)
+  * cuota_mensual : NUMERIC(10,2)
+  estado : TEXT
+  motivo_abandono : TEXT
+  created_at : TIMESTAMPTZ
+}
+
+entity "mora_creditos" as MOR {
+  * id : UUID
+  --
+  solicitud_id : UUID <<FK>>
+  * user_id : UUID
+  * dias_mora : INTEGER
+  * banda : TEXT
+  * monto_deuda : NUMERIC(12,2)
+  estado_gestion : TEXT
+  fecha_ultima_gestion : TIMESTAMPTZ
+  observaciones : TEXT
+  created_at : TIMESTAMPTZ
+}
+
+USR ||--o{ ROL : "tiene"
+USR ||--o{ SOL : "solicita"
+SOL ||--o| MOR : "genera"
+
+@enduml

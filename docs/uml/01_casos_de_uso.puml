@@ -1,0 +1,38 @@
+@startuml 01_casos_de_uso
+!theme plain
+title CMAC Maynas — Casos de Uso
+
+actor "Cliente" as CLI
+actor "Asesor" as ASE
+actor "Administrador" as ADM
+actor "Comite" as COM
+
+rectangle "Sistema CMAC Maynas" {
+  usecase "Iniciar sesion" as UC1
+  usecase "Solicitar credito" as UC2
+  usecase "Ver solicitudes" as UC3
+  usecase "Evaluar solicitud" as UC5
+  usecase "Gestionar mora" as UC6
+  usecase "Derivar judicial" as UC7
+  usecase "Resolver comite" as UC8
+  usecase "Castigar credito" as UC9
+  usecase "Desembolsar" as UC11
+}
+
+CLI --> UC1
+CLI --> UC2
+CLI --> UC3
+
+ASE --> UC1
+ASE --> UC5
+ASE --> UC6
+
+ADM --> UC1
+ADM --> UC7
+
+COM --> UC1
+COM --> UC8
+COM --> UC9
+COM --> UC11
+
+@enduml

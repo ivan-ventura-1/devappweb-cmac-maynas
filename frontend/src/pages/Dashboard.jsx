@@ -1,7 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import ModalSolicitud from "../components/ModalSolicitud";
 
-
 export default function Dashboard() {
   const [usuario, setUsuario] = useState(null);
   const [userId, setUserId] = useState(null);
@@ -12,6 +11,7 @@ export default function Dashboard() {
   const [depositoModal, setDepositoModal] = useState(false);
   const [montoDeposito, setMontoDeposito] = useState("");
   const [movimientos, setMovimientos] = useState([]);
+  const [cronogramaAbierto, setCronogramaAbierto] = useState(null); // id de solicitud
 
   useEffect(() => {
     const u = localStorage.getItem("usuario");
@@ -82,23 +82,33 @@ export default function Dashboard() {
     window.location.href = "/";
   };
 
+  // ── GENERAR CRONOGRAMA ────────────────────────────────────────────────────
+  const generarCronograma = (monto, plazo, tea, cuota) => {
+    const tem = Math.pow(1 + tea / 100, 1 / 12) - 1;
+    const filas = [];
+    let saldo = Number(monto);
+    const cuotaFija = Number(cuota);
+    const hoy = new Date();
+
+    for (let n = 1; n <= plazo; n++) {
+      const interes = saldo * tem;
+      const capital = cuotaFija - interes;
+      saldo = Math.max(0, saldo - capital);
+      const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + n, hoy.getDate());
+      filas.push({
+        n,
+        fecha: fecha.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" }),
+        cuota: cuotaFija.toFixed(2),
+        capital: capital.toFixed(2),
+        interes: interes.toFixed(2),
+        saldo: saldo.toFixed(2),
+      });
+    }
+    return filas;
+  };
+
   const estadoColor = { pendiente: "#d97706", aprobado: "#059669", rechazado: "#dc2626", desembolsado: "#1e3a5f", aprobado_scoring: "#7c3aed", en_comite: "#f59e0b" };
   const estadoBg = { pendiente: "#fffbeb", aprobado: "#ecfdf5", rechazado: "#fef2f2", desembolsado: "#e0f2fe", aprobado_scoring: "#f5f3ff", en_comite: "#fef3c7" };
-
-  // Datos para gráficos
-  const dataPie = [
-    { name: "Desembolsado", value: solicitudes.filter(s => s.estado === "desembolsado").length, color: "#1e3a5f" },
-    { name: "Aprobado", value: solicitudes.filter(s => s.estado === "aprobado" || s.estado === "aprobado_scoring").length, color: "#059669" },
-    { name: "Pendiente", value: solicitudes.filter(s => s.estado === "pendiente").length, color: "#d97706" },
-    { name: "Rechazado", value: solicitudes.filter(s => s.estado === "rechazado").length, color: "#dc2626" },
-  ].filter(d => d.value > 0);
-
-  const dataBar = [
-    { name: "Depósitos", monto: movimientos.filter(m => m.tipo === "deposito").reduce((a, m) => a + Number(m.monto), 0) },
-    { name: "Créditos", monto: movimientos.filter(m => m.tipo === "credito").reduce((a, m) => a + Number(m.monto), 0) },
-    { name: "Pagos", monto: movimientos.filter(m => m.tipo === "pago_cuota").reduce((a, m) => a + Number(m.monto), 0) },
-    { name: "Retiros", monto: movimientos.filter(m => m.tipo === "retiro").reduce((a, m) => a + Number(m.monto), 0) },
-  ];
 
   if (!usuario) return <div style={{padding:32,color:"#64748b"}}>Cargando...</div>;
 
@@ -171,43 +181,43 @@ export default function Dashboard() {
         </div>
 
         <div style={styles.chartsRow}>
-  <div style={styles.chartCard}>
-    <h3 style={styles.chartTitle}>Estado de Solicitudes</h3>
-    <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
-      {[
-        {label:"Desembolsado",count:solicitudes.filter(s=>s.estado==="desembolsado").length,color:"#1e3a5f"},
-        {label:"Aprobado",count:solicitudes.filter(s=>s.estado==="aprobado"||s.estado==="aprobado_scoring").length,color:"#059669"},
-        {label:"Pendiente",count:solicitudes.filter(s=>s.estado==="pendiente").length,color:"#d97706"},
-        {label:"Rechazado",count:solicitudes.filter(s=>s.estado==="rechazado").length,color:"#dc2626"},
-      ].map((item,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:12,height:12,borderRadius:"50%",background:item.color,flexShrink:0}}></div>
-          <div style={{flex:1,fontSize:13,color:"#374151"}}>{item.label}</div>
-          <div style={{width:`${Math.min(item.count*40,160)}px`,height:18,background:item.color,borderRadius:4,opacity:0.7,minWidth:4}}></div>
-          <div style={{fontSize:13,fontWeight:700,color:item.color,minWidth:24}}>{item.count}</div>
+          <div style={styles.chartCard}>
+            <h3 style={styles.chartTitle}>Estado de Solicitudes</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
+              {[
+                {label:"Desembolsado",count:solicitudes.filter(s=>s.estado==="desembolsado").length,color:"#1e3a5f"},
+                {label:"Aprobado",count:solicitudes.filter(s=>s.estado==="aprobado"||s.estado==="aprobado_scoring").length,color:"#059669"},
+                {label:"Pendiente",count:solicitudes.filter(s=>s.estado==="pendiente").length,color:"#d97706"},
+                {label:"Rechazado",count:solicitudes.filter(s=>s.estado==="rechazado").length,color:"#dc2626"},
+              ].map((item,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:12,height:12,borderRadius:"50%",background:item.color,flexShrink:0}}></div>
+                  <div style={{flex:1,fontSize:13,color:"#374151"}}>{item.label}</div>
+                  <div style={{width:`${Math.min(item.count*40,160)}px`,height:18,background:item.color,borderRadius:4,opacity:0.7,minWidth:4}}></div>
+                  <div style={{fontSize:13,fontWeight:700,color:item.color,minWidth:24}}>{item.count}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={styles.chartCard}>
+            <h3 style={styles.chartTitle}>Resumen de Movimientos (S/)</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
+              {[
+                {label:"Depósitos",monto:movimientos.filter(m=>m.tipo==="deposito").reduce((a,m)=>a+Number(m.monto),0),color:"#059669"},
+                {label:"Créditos",monto:movimientos.filter(m=>m.tipo==="credito").reduce((a,m)=>a+Number(m.monto),0),color:"#1e3a5f"},
+                {label:"Pagos Cuota",monto:movimientos.filter(m=>m.tipo==="pago_cuota").reduce((a,m)=>a+Number(m.monto),0),color:"#d97706"},
+                {label:"Retiros",monto:movimientos.filter(m=>m.tipo==="retiro").reduce((a,m)=>a+Number(m.monto),0),color:"#dc2626"},
+              ].map((item,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:12,height:12,borderRadius:"50%",background:item.color,flexShrink:0}}></div>
+                  <div style={{flex:1,fontSize:13,color:"#374151"}}>{item.label}</div>
+                  <div style={{width:`${Math.min(item.monto/40,160)}px`,height:18,background:item.color,borderRadius:4,opacity:0.7,minWidth:4}}></div>
+                  <div style={{fontSize:13,fontWeight:700,color:item.color,minWidth:80}}>S/ {item.monto.toFixed(0)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-  <div style={styles.chartCard}>
-    <h3 style={styles.chartTitle}>Resumen de Movimientos (S/)</h3>
-    <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
-      {[
-        {label:"Depósitos",monto:movimientos.filter(m=>m.tipo==="deposito").reduce((a,m)=>a+Number(m.monto),0),color:"#059669"},
-        {label:"Créditos",monto:movimientos.filter(m=>m.tipo==="credito").reduce((a,m)=>a+Number(m.monto),0),color:"#1e3a5f"},
-        {label:"Pagos Cuota",monto:movimientos.filter(m=>m.tipo==="pago_cuota").reduce((a,m)=>a+Number(m.monto),0),color:"#d97706"},
-        {label:"Retiros",monto:movimientos.filter(m=>m.tipo==="retiro").reduce((a,m)=>a+Number(m.monto),0),color:"#dc2626"},
-      ].map((item,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:12,height:12,borderRadius:"50%",background:item.color,flexShrink:0}}></div>
-          <div style={{flex:1,fontSize:13,color:"#374151"}}>{item.label}</div>
-          <div style={{width:`${Math.min(item.monto/40,160)}px`,height:18,background:item.color,borderRadius:4,opacity:0.7,minWidth:4}}></div>
-          <div style={{fontSize:13,fontWeight:700,color:item.color,minWidth:80}}>S/ {item.monto.toFixed(0)}</div>
-        </div>
-      ))}
-    </div>
-  </div>
-</div>
 
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>Acciones Rápidas</h2>
@@ -224,17 +234,64 @@ export default function Dashboard() {
         {solicitudes.length > 0 && (
           <div style={styles.section}>
             <h2 style={styles.sectionTitle}>Mis Solicitudes</h2>
-            {solicitudes.map((s, i) => (
-              <div key={i} style={styles.solicitudRow}>
-                <div>
-                  <div style={styles.solicitudMonto}>S/ {Number(s.monto).toFixed(2)}</div>
-                  <div style={styles.solicitudDetalle}>{s.plazo_meses} meses — TEA {s.tasa_anual}% — Cuota S/ {Number(s.cuota_mensual).toFixed(2)}</div>
+            {solicitudes.map((s, i) => {
+              const abierto = cronogramaAbierto === s.id;
+              const cronograma = abierto ? generarCronograma(s.monto, s.plazo_meses, s.tasa_anual, s.cuota_mensual) : [];
+              return (
+                <div key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  {/* Fila principal */}
+                  <div style={styles.solicitudRow}>
+                    <div>
+                      <div style={styles.solicitudMonto}>S/ {Number(s.monto).toFixed(2)}</div>
+                      <div style={styles.solicitudDetalle}>{s.plazo_meses} meses — TEA {s.tasa_anual}% — Cuota S/ {Number(s.cuota_mensual).toFixed(2)}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ padding:"5px 12px", borderRadius:20, fontSize:12, fontWeight:600, background: estadoBg[s.estado] || "#f1f5f9", color: estadoColor[s.estado] || "#64748b" }}>
+                        {s.estado}
+                      </span>
+                      {s.estado === "desembolsado" && (
+                        <button
+                          style={{ background: abierto ? "#1e3a5f" : "#e0f2fe", color: abierto ? "#fff" : "#1e3a5f", border: "none", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                          onClick={() => setCronogramaAbierto(abierto ? null : s.id)}
+                        >
+                          {abierto ? "▲ Ocultar" : "📅 Cronograma"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cronograma expandible */}
+                  {abierto && (
+                    <div style={{ padding: "16px 0 20px", overflowX: "auto" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1e3a5f", marginBottom: 10 }}>
+                        Cronograma de Pagos — {s.plazo_meses} cuotas de S/ {Number(s.cuota_mensual).toFixed(2)}
+                      </div>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: "#f8fafc" }}>
+                            {["N°", "Fecha de Pago", "Cuota", "Capital", "Interés", "Saldo"].map(h => (
+                              <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #e2e8f0" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cronograma.map((fila, j) => (
+                            <tr key={j} style={{ background: j % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                              <td style={{ padding: "7px 12px", color: "#64748b" }}>{fila.n}</td>
+                              <td style={{ padding: "7px 12px", color: "#374151" }}>{fila.fecha}</td>
+                              <td style={{ padding: "7px 12px", fontWeight: 700, color: "#0f172a" }}>S/ {fila.cuota}</td>
+                              <td style={{ padding: "7px 12px", color: "#1e3a5f" }}>S/ {fila.capital}</td>
+                              <td style={{ padding: "7px 12px", color: "#dc2626" }}>S/ {fila.interes}</td>
+                              <td style={{ padding: "7px 12px", color: "#059669" }}>S/ {fila.saldo}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-                <span style={{ padding:"5px 12px", borderRadius:20, fontSize:12, fontWeight:600, background: estadoBg[s.estado] || "#f1f5f9", color: estadoColor[s.estado] || "#64748b" }}>
-                  {s.estado}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -270,14 +327,10 @@ const styles = {
   chartTitle: { margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: "#0f172a" },
   section: { background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", marginBottom: 20 },
   sectionTitle: { margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#0f172a" },
-  sectionDesc: { color: "#64748b", fontSize: 14, marginBottom: 20 },
   btnRow: { display: "flex", gap: 12, flexWrap: "wrap" },
   btnPrimary: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
   btnSecondary: { background: "#fff", color: "#1e3a5f", border: "2px solid #1e3a5f", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
-  solicitudRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: "1px solid #f1f5f9" },
+  solicitudRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0" },
   solicitudMonto: { fontSize: 16, fontWeight: 700, color: "#0f172a" },
   solicitudDetalle: { fontSize: 12, color: "#64748b", marginTop: 2 },
 };
-
-
-

@@ -8,7 +8,7 @@ const bandaConfig = {
   castigo:    { color: "#475569", bg: "#f8fafc", icon: "🚫", label: "Castigo" },
 };
 const estadoConfig = {
-  pendiente:           { color: "#d97706", bg: "#fffbeb", label: "Pendiente" },
+  pendiente:            { color: "#d97706", bg: "#fffbeb", label: "Pendiente" },
   en_evaluacion:        { color: "#0ea5e9", bg: "#e0f2fe", label: "En Evaluación" },
   rechazado_automatico: { color: "#dc2626", bg: "#fef2f2", label: "Rechazado (RDS)" },
   aprobado_scoring:     { color: "#7c3aed", bg: "#f5f3ff", label: "Aprobado por Scoring" },
@@ -37,6 +37,10 @@ export default function Core() {
   const [vista, setVista] = useState("dashboard");
   const [mora, setMora] = useState([]);
   const [cuentas, setCuentas] = useState([]);
+
+  // Nuevos estados para los modales
+  const [historialModal, setHistorialModal] = useState(null); // { userId, solicitudes, cuenta }
+  const [informeModal, setInformeModal] = useState(null);     // solicitud seleccionada
 
   useEffect(() => { cargar(); }, []);
 
@@ -85,6 +89,18 @@ export default function Core() {
     if (data.success) { setEvalModal(null); setIngresoNeto(""); setGastoFamiliar(""); cargar(); }
   };
 
+  // Abrir historial del cliente
+  const handleHistorial = (s) => {
+    const solsCliente = solicitudes.filter(x => x.user_id === s.user_id);
+    const cuentaCliente = cuentas.find(c => c.user_id === s.user_id);
+    setHistorialModal({ userId: s.user_id, solicitudes: solsCliente, cuenta: cuentaCliente });
+  };
+
+  // Abrir informe REC
+  const handleInforme = (s) => {
+    setInformeModal(s);
+  };
+
   const solicitudesFiltradas = filtro === "todos" ? solicitudes : solicitudes.filter(s => s.estado === filtro);
   const pendientes = solicitudes.filter(s => s.estado === "pendiente");
   const enComite = solicitudes.filter(s => s.estado === "en_comite" || s.estado === "aprobado_scoring");
@@ -117,6 +133,7 @@ export default function Core() {
               <td style={styles.td}><span style={{ ...styles.badge, background: cfg.bg, color: cfg.color }}>{cfg.label}</span></td>
               <td style={styles.td}>
                 <div style={styles.acciones}>
+                  {/* Botones existentes */}
                   {s.estado === "pendiente" && <button style={styles.btnEvaluarTbl} onClick={() => setEvalModal(s)}>Evaluar</button>}
                   {(s.estado === "aprobado_scoring" || s.estado === "en_comite") && (
                     <>
@@ -126,6 +143,9 @@ export default function Core() {
                   )}
                   {s.estado === "aprobado" && <button style={styles.btnDesembolsar} onClick={() => handleEstado(s.id, "desembolsado")}>💰 Desembolsar</button>}
                   {["rechazado", "rechazado_automatico", "desembolsado"].includes(s.estado) && <span style={{ color: "#94a3b8", fontSize: 12 }}>—</span>}
+                  {/* NUEVOS BOTONES */}
+                  <button style={styles.btnHistorial} onClick={() => handleHistorial(s)} title="Historial del cliente">📂 Historial</button>
+                  <button style={styles.btnInforme} onClick={() => handleInforme(s)} title="Informe REC">📄 Informe REC</button>
                 </div>
               </td>
             </tr>
@@ -193,7 +213,7 @@ export default function Core() {
         </div>
       );
     }
-        if (vista === "mora") {
+    if (vista === "mora") {
       return (
         <div style={styles.tableCard}>
           <div style={styles.tableHeader}><span style={styles.tableTitle}>Bandeja de Mora — {mora.length} créditos</span></div>
@@ -231,7 +251,8 @@ export default function Core() {
           </table>
         </div>
       );
-    }        if (vista === "ahorros") {
+    }
+    if (vista === "ahorros") {
       return (
         <div style={styles.tableCard}>
           <div style={styles.tableHeader}><span style={styles.tableTitle}>Captaciones — Cuentas de Ahorro ({cuentas.length})</span></div>
@@ -259,11 +280,178 @@ export default function Core() {
           </table>
         </div>
       );
-    }    return null;
+    }
+    return null;
+  };
+
+  // ── MODAL HISTORIAL CLIENTE ────────────────────────────────────────────────
+  const renderHistorialModal = () => {
+    if (!historialModal) return null;
+    const { userId, solicitudes: sols, cuenta } = historialModal;
+    return (
+      <div style={styles.overlay} onClick={e => e.target === e.currentTarget && setHistorialModal(null)}>
+        <div style={{ ...styles.modal, width: 620, maxHeight: "80vh", overflowY: "auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 17, color: "#0f172a" }}>📂 Historial del Cliente</h3>
+            <button onClick={() => setHistorialModal(null)} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#64748b" }}>✕</button>
+          </div>
+          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 16, padding: "8px 12px", background: "#f8fafc", borderRadius: 8 }}>
+            ID: {userId}
+          </div>
+
+          {/* Cuenta de ahorro */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e3a5f", marginBottom: 8 }}>🏦 Cuenta de Ahorro</div>
+            {cuenta ? (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                {[
+                  { label: "Saldo", value: `S/ ${Number(cuenta.saldo).toFixed(2)}`, color: "#059669" },
+                  { label: "Meta", value: `S/ ${Number(cuenta.meta_ahorro).toFixed(2)}`, color: "#0ea5e9" },
+                  { label: "Tasa", value: `${cuenta.tasa_interes}% TEA`, color: "#7c3aed" },
+                ].map((item, i) => (
+                  <div key={i} style={{ background: "#f8fafc", borderRadius: 10, padding: "10px 14px" }}>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>{item.label}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: item.color }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: "#94a3b8", fontSize: 13 }}>Sin cuenta de ahorro registrada</div>
+            )}
+          </div>
+
+          {/* Solicitudes */}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e3a5f", marginBottom: 8 }}>
+              📋 Solicitudes de Crédito ({sols.length})
+            </div>
+            {sols.length === 0 ? (
+              <div style={{ color: "#94a3b8", fontSize: 13 }}>Sin solicitudes</div>
+            ) : sols.map((s, i) => {
+              const cfg = estadoConfig[s.estado] || estadoConfig.pendiente;
+              return (
+                <div key={i} style={{ border: "1px solid #f1f5f9", borderRadius: 10, padding: "12px 14px", marginBottom: 8, background: "#fff" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <span style={{ fontWeight: 700, color: "#0f172a" }}>S/ {Number(s.monto).toFixed(2)}</span>
+                      <span style={{ color: "#64748b", fontSize: 12, marginLeft: 8 }}>{s.plazo_meses} meses — TEA {s.tasa_anual}%</span>
+                    </div>
+                    <span style={{ ...styles.badge, background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 16, marginTop: 8, fontSize: 12, color: "#64748b" }}>
+                    <span>Cuota: <b style={{ color: "#059669" }}>S/ {Number(s.cuota_mensual).toFixed(2)}</b></span>
+                    {s.rds != null && <span>RDS: <b>{s.rds}%</b></span>}
+                    {s.score != null && <span>Score: <b>{s.score}</b></span>}
+                    {s.nivel_aprobacion && <span>Nivel: <b>{s.nivel_aprobacion}</b></span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── MODAL INFORME REC ──────────────────────────────────────────────────────
+  const renderInformeModal = () => {
+    if (!informeModal) return null;
+    const s = informeModal;
+    const disponible = s.ingreso_neto && s.gasto_familiar ? s.ingreso_neto - s.gasto_familiar : null;
+    const capacidadOK = s.rds != null ? s.rds <= 40 : null;
+    const scoreOK = s.score != null ? s.score >= 60 : null;
+    const nivelLabel = { asesor: "Asesor de Negocios", comite: "Comité de Créditos", jefe_regional: "Jefe Regional" };
+    const fechaHoy = new Date().toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" });
+
+    return (
+      <div style={styles.overlay} onClick={e => e.target === e.currentTarget && setInformeModal(null)}>
+        <div style={{ ...styles.modal, width: 560, maxHeight: "85vh", overflowY: "auto" }}>
+          {/* Encabezado */}
+          <div style={{ background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", borderRadius: 10, padding: "16px 20px", marginBottom: 20, color: "#fff" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>CMAC MAYNAS</div>
+                <div style={{ fontSize: 12, opacity: 0.85 }}>Informe de Evaluación Crediticia (REC)</div>
+              </div>
+              <button onClick={() => setInformeModal(null)} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 6, color: "#fff", cursor: "pointer", padding: "4px 10px", fontSize: 13 }}>✕</button>
+            </div>
+            <div style={{ marginTop: 12, fontSize: 12, opacity: 0.8 }}>Fecha: {fechaHoy}</div>
+          </div>
+
+          {/* Datos del crédito */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>Datos del Crédito</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { label: "Monto Solicitado", value: `S/ ${Number(s.monto).toFixed(2)}` },
+                { label: "Plazo", value: `${s.plazo_meses} meses` },
+                { label: "TEA", value: `${s.tasa_anual}%` },
+                { label: "Cuota Mensual", value: `S/ ${Number(s.cuota_mensual).toFixed(2)}` },
+                { label: "Tipo", value: s.proposito || "Capital de trabajo" },
+                { label: "Nivel Aprobación", value: nivelLabel[s.nivel_aprobacion] || s.nivel_aprobacion || "—" },
+              ].map((item, i) => (
+                <div key={i} style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>{item.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Evaluación financiera */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>Evaluación Financiera</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { label: "Ingreso Neto", value: s.ingreso_neto ? `S/ ${Number(s.ingreso_neto).toFixed(2)}` : "—" },
+                { label: "Gasto Familiar", value: s.gasto_familiar ? `S/ ${Number(s.gasto_familiar).toFixed(2)}` : "—" },
+                { label: "Ingreso Disponible", value: disponible ? `S/ ${Number(disponible).toFixed(2)}` : "—" },
+                { label: "RDS", value: s.rds != null ? `${s.rds}%` : "—" },
+              ].map((item, i) => (
+                <div key={i} style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>{item.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Semaforo RDS y Score */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>Resultado del Scoring</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1, borderRadius: 10, padding: "14px 16px", background: capacidadOK === null ? "#f8fafc" : capacidadOK ? "#ecfdf5" : "#fef2f2", border: `1.5px solid ${capacidadOK === null ? "#e2e8f0" : capacidadOK ? "#a7f3d0" : "#fecaca"}` }}>
+                <div style={{ fontSize: 11, color: "#64748b" }}>Capacidad de Pago (RDS ≤ 40%)</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: capacidadOK === null ? "#94a3b8" : capacidadOK ? "#059669" : "#dc2626" }}>
+                  {capacidadOK === null ? "—" : capacidadOK ? "✓ APTO" : "✗ NO APTO"}
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>RDS: {s.rds != null ? `${s.rds}%` : "Sin evaluar"}</div>
+              </div>
+              <div style={{ flex: 1, borderRadius: 10, padding: "14px 16px", background: scoreOK === null ? "#f8fafc" : scoreOK ? "#ecfdf5" : "#fef3c7", border: `1.5px solid ${scoreOK === null ? "#e2e8f0" : scoreOK ? "#a7f3d0" : "#fde68a"}` }}>
+                <div style={{ fontSize: 11, color: "#64748b" }}>Score Crediticio (≥ 60)</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: scoreOK === null ? "#94a3b8" : scoreOK ? "#059669" : "#d97706" }}>
+                  {s.score != null ? s.score : "—"} pts
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>{scoreOK === null ? "Sin evaluar" : scoreOK ? "Aprobado por scoring" : "Requiere comité"}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Estado final */}
+          <div style={{ borderRadius: 10, padding: "14px 16px", background: (estadoConfig[s.estado] || estadoConfig.pendiente).bg, border: `1.5px solid ${(estadoConfig[s.estado] || estadoConfig.pendiente).color}30` }}>
+            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>Resolución actual</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: (estadoConfig[s.estado] || estadoConfig.pendiente).color }}>
+              {(estadoConfig[s.estado] || estadoConfig.pendiente).label}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
     <div style={styles.page}>
+      {/* Modal evaluación existente */}
       {evalModal && (
         <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && setEvalModal(null)}>
           <div style={styles.modal}>
@@ -284,6 +472,10 @@ export default function Core() {
           </div>
         </div>
       )}
+
+      {/* Nuevos modales */}
+      {renderHistorialModal()}
+      {renderInformeModal()}
 
       <nav style={styles.nav}>
         <div style={styles.navLeft}>
@@ -338,10 +530,12 @@ const styles = {
   td: { padding: "14px 16px", fontSize: 13, borderBottom: "1px solid #f1f5f9", color: "#374151" },
   badge: { padding: "4px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600 },
   acciones: { display: "flex", gap: 6, flexWrap: "wrap" },
-  btnEvaluarTbl: { background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
-  btnAprobar: { background: "#ecfdf5", color: "#059669", border: "1px solid #a7f3d0", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
-  btnRechazar: { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  btnEvaluarTbl:  { background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  btnAprobar:     { background: "#ecfdf5", color: "#059669", border: "1px solid #a7f3d0", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  btnRechazar:    { background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
   btnDesembolsar: { background: "#e0f2fe", color: "#1e3a5f", border: "1px solid #bae6fd", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  btnHistorial:   { background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
+  btnInforme:     { background: "#f5f3ff", color: "#5b21b6", border: "1px solid #ddd6fe", borderRadius: 6, padding: "5px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 },
   loading: { padding: 32, color: "#64748b", fontFamily: "sans-serif" },
   overlay: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
   modal: { background: "#fff", borderRadius: 16, padding: 28, width: 400, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" },
@@ -356,11 +550,3 @@ const styles = {
   placeholder: { background: "#fff", borderRadius: 16, padding: 60, textAlign: "center", color: "#64748b", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
   btnPrimary: { background: "linear-gradient(135deg, #1e3a5f, #0ea5e9)", color: "#fff", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 14, fontWeight: 600, cursor: "pointer", marginTop: 16 },
 };
-
-
-
-
-
-
-
-
