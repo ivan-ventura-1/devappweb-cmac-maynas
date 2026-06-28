@@ -9,10 +9,10 @@ const bandaConfig = {
 };
 const estadoConfig = {
   pendiente:            { color: "#d97706", bg: "#fffbeb", label: "Pendiente" },
-  en_evaluacion:        { color: "#0ea5e9", bg: "#e0f2fe", label: "En Evaluación" },
+  en_evaluacion:        { color: "#0ea5e9", bg: "#e0f2fe", label: "En Evaluacion" },
   rechazado_automatico: { color: "#dc2626", bg: "#fef2f2", label: "Rechazado (RDS)" },
   aprobado_scoring:     { color: "#7c3aed", bg: "#f5f3ff", label: "Aprobado por Scoring" },
-  en_comite:            { color: "#f59e0b", bg: "#fef3c7", label: "En Comité" },
+  en_comite:            { color: "#f59e0b", bg: "#fef3c7", label: "En Comite" },
   aprobado:             { color: "#059669", bg: "#ecfdf5", label: "Aprobado" },
   rechazado:            { color: "#dc2626", bg: "#fef2f2", label: "Rechazado" },
   desembolsado:         { color: "#1e3a5f", bg: "#e0f2fe", label: "Desembolsado" },
@@ -21,10 +21,11 @@ const estadoConfig = {
 const TABS = [
   { key: "dashboard", label: "Dashboard", icon: "📊" },
   { key: "bandeja", label: "Bandeja de Solicitudes", icon: "📋" },
-  { key: "comite", label: "Propuesta y Comité", icon: "👥" },
-  { key: "desembolso", label: "Aprobación y Desembolso", icon: "💰" },
-  { key: "mora", label: "Mora y Recuperación", icon: "⚠️" },
+  { key: "comite", label: "Propuesta y Comite", icon: "👥" },
+  { key: "desembolso", label: "Aprobacion y Desembolso", icon: "💰" },
+  { key: "mora", label: "Mora y Recuperacion", icon: "⚠️" },
   { key: "ahorros", label: "Captaciones / Ahorros", icon: "🏦" },
+  { key: "reportes", label: "Reportes BI", icon: "📈" },
 ];
 
 export default function Core() {
@@ -37,18 +38,12 @@ export default function Core() {
   const [vista, setVista] = useState("dashboard");
   const [mora, setMora] = useState([]);
   const [cuentas, setCuentas] = useState([]);
-
-  // Modales bandeja
   const [historialModal, setHistorialModal] = useState(null);
   const [informeModal, setInformeModal] = useState(null);
-
-  // Modal gestión mora
-  const [gestionModal, setGestionModal] = useState(null); // registro de mora
+  const [gestionModal, setGestionModal] = useState(null);
   const [obsGestion, setObsGestion] = useState("");
   const [guardandoGestion, setGuardandoGestion] = useState(false);
-
-  // Historial mora expandido
-  const [moraExpandida, setMoraExpandida] = useState(null); // id mora
+  const [moraExpandida, setMoraExpandida] = useState(null);
 
   useEffect(() => { cargar(); }, []);
 
@@ -83,7 +78,6 @@ export default function Core() {
     if (data.success) { setEvalModal(null); setIngresoNeto(""); setGastoFamiliar(""); cargar(); }
   };
 
-  // Registrar gestión de mora
   const handleGestion = async () => {
     if (!obsGestion.trim()) return;
     setGuardandoGestion(true);
@@ -93,12 +87,8 @@ export default function Core() {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ moraId: gestionModal.id, observacion: obsGestion })
       });
-      setGestionModal(null);
-      setObsGestion("");
-      cargar();
-    } catch (e) {
-      alert("Error al registrar gestión");
-    }
+      setGestionModal(null); setObsGestion(""); cargar();
+    } catch (e) { alert("Error al registrar gestion"); }
     setGuardandoGestion(false);
   };
 
@@ -111,9 +101,9 @@ export default function Core() {
   const handleInforme = (s) => setInformeModal(s);
 
   const solicitudesFiltradas = filtro === "todos" ? solicitudes : solicitudes.filter(s => s.estado === filtro);
-  const pendientes   = solicitudes.filter(s => s.estado === "pendiente");
-  const enComite     = solicitudes.filter(s => s.estado === "en_comite" || s.estado === "aprobado_scoring");
-  const aprobadas    = solicitudes.filter(s => s.estado === "aprobado");
+  const pendientes    = solicitudes.filter(s => s.estado === "pendiente");
+  const enComite      = solicitudes.filter(s => s.estado === "en_comite" || s.estado === "aprobado_scoring");
+  const aprobadas     = solicitudes.filter(s => s.estado === "aprobado");
   const desembolsadas = solicitudes.filter(s => s.estado === "desembolsado");
 
   if (loading) return <div style={styles.loading}>Cargando...</div>;
@@ -145,14 +135,14 @@ export default function Core() {
                   {s.estado==="pendiente" && <button style={styles.btnEvaluarTbl} onClick={()=>setEvalModal(s)}>Evaluar</button>}
                   {(s.estado==="aprobado_scoring"||s.estado==="en_comite") && (
                     <>
-                      <button style={styles.btnAprobar} onClick={()=>handleEstado(s.id,"aprobado")}>✓ Aprobar</button>
-                      <button style={styles.btnRechazar} onClick={()=>handleEstado(s.id,"rechazado")}>✗ Rechazar</button>
+                      <button style={styles.btnAprobar} onClick={()=>handleEstado(s.id,"aprobado")}>Aprobar</button>
+                      <button style={styles.btnRechazar} onClick={()=>handleEstado(s.id,"rechazado")}>Rechazar</button>
                     </>
                   )}
-                  {s.estado==="aprobado" && <button style={styles.btnDesembolsar} onClick={()=>handleEstado(s.id,"desembolsado")}>💰 Desembolsar</button>}
+                  {s.estado==="aprobado" && <button style={styles.btnDesembolsar} onClick={()=>handleEstado(s.id,"desembolsado")}>Desembolsar</button>}
                   {["rechazado","rechazado_automatico","desembolsado"].includes(s.estado) && <span style={{color:"#94a3b8",fontSize:12}}>—</span>}
-                  <button style={styles.btnHistorial} onClick={()=>handleHistorial(s)}>📂 Historial</button>
-                  <button style={styles.btnInforme} onClick={()=>handleInforme(s)}>📄 Informe REC</button>
+                  <button style={styles.btnHistorial} onClick={()=>handleHistorial(s)}>Historial</button>
+                  <button style={styles.btnInforme} onClick={()=>handleInforme(s)}>Informe REC</button>
                 </div>
               </td>
             </tr>
@@ -162,7 +152,225 @@ export default function Core() {
     </table>
   );
 
+  // ── REPORTES BI ───────────────────────────────────────────────────────────
+  const renderReportes = () => {
+    const totalMonto = solicitudes.reduce((a,s) => a + Number(s.monto), 0);
+    const montoDesembolsado = desembolsadas.reduce((a,s) => a + Number(s.monto), 0);
+    const montoMora = mora.reduce((a,m) => a + Number(m.monto_deuda), 0);
+    const ticketPromedio = desembolsadas.length > 0 ? montoDesembolsado / desembolsadas.length : 0;
+    const ratiMora = totalMonto > 0 ? (montoMora / totalMonto * 100) : 0;
+    const totalAhorros = cuentas.reduce((a,c) => a + Number(c.saldo), 0);
+
+    // Datos para grafico de barras por estado
+    const estadosBar = [
+      { label:"Desembolsado", count:desembolsadas.length, monto:montoDesembolsado, color:"#1e3a5f" },
+      { label:"En Comite",    count:enComite.length,      monto:enComite.reduce((a,s)=>a+Number(s.monto),0), color:"#7c3aed" },
+      { label:"Aprobado",     count:aprobadas.length,     monto:aprobadas.reduce((a,s)=>a+Number(s.monto),0), color:"#059669" },
+      { label:"Pendiente",    count:pendientes.length,    monto:pendientes.reduce((a,s)=>a+Number(s.monto),0), color:"#d97706" },
+      { label:"Rechazado",    count:solicitudes.filter(s=>s.estado==="rechazado"||s.estado==="rechazado_automatico").length, monto:0, color:"#dc2626" },
+    ];
+    const maxMonto = Math.max(...estadosBar.map(e=>e.monto), 1);
+
+    // Datos mora por banda
+    const moraBar = Object.entries(bandaConfig).map(([b,cfg]) => ({
+      label: cfg.label,
+      count: mora.filter(m=>m.banda===b).length,
+      monto: mora.filter(m=>m.banda===b).reduce((a,m)=>a+Number(m.monto_deuda),0),
+      color: cfg.color,
+    }));
+    const maxMoraMonto = Math.max(...moraBar.map(e=>e.monto), 1);
+
+    // Score distribution
+    const scoreRanges = [
+      { label:"90-100", count:solicitudes.filter(s=>s.score>=90).length, color:"#059669" },
+      { label:"70-89",  count:solicitudes.filter(s=>s.score>=70&&s.score<90).length, color:"#0ea5e9" },
+      { label:"60-69",  count:solicitudes.filter(s=>s.score>=60&&s.score<70).length, color:"#d97706" },
+      { label:"<60",    count:solicitudes.filter(s=>s.score!=null&&s.score<60).length, color:"#dc2626" },
+    ];
+    const maxScore = Math.max(...scoreRanges.map(e=>e.count), 1);
+
+    return (
+      <div>
+        {/* Header */}
+        <div style={{background:"linear-gradient(135deg,#0f172a,#1e3a5f)",borderRadius:16,padding:"24px 28px",marginBottom:24,color:"#fff"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Panel de Reportes</div>
+              <div style={{fontSize:22,fontWeight:800}}>Dashboard BI — CMAC Maynas</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.65)",marginTop:4}}>Datos en tiempo real desde Supabase</div>
+            </div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>
+              Actualizado: {new Date().toLocaleString("es-PE")}
+            </div>
+          </div>
+        </div>
+
+        {/* KPIs principales */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:14,marginBottom:24}}>
+          {[
+            { label:"Cartera Total", value:`S/ ${(totalMonto/1000).toFixed(1)}k`, sub:`${solicitudes.length} solicitudes`, color:"#1e3a5f", icon:"💼" },
+            { label:"Desembolsado", value:`S/ ${(montoDesembolsado/1000).toFixed(1)}k`, sub:`${desembolsadas.length} creditos`, color:"#059669", icon:"💰" },
+            { label:"Ticket Promedio", value:`S/ ${ticketPromedio.toFixed(0)}`, sub:"por credito", color:"#0ea5e9", icon:"🎫" },
+            { label:"Cartera Vencida", value:`S/ ${(montoMora/1000).toFixed(1)}k`, sub:`${mora.length} en mora`, color:"#dc2626", icon:"⚠️" },
+            { label:"Ratio Mora %", value:`${ratiMora.toFixed(2)}%`, sub:"cartera vencida/total", color:ratiMora>5?"#dc2626":"#059669", icon:"📊" },
+          ].map((k,i)=>(
+            <div key={i} style={{background:"#fff",borderRadius:14,padding:18,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+              <div style={{fontSize:20,marginBottom:8}}>{k.icon}</div>
+              <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{k.label}</div>
+              <div style={{fontSize:22,fontWeight:800,color:k.color}}>{k.value}</div>
+              <div style={{fontSize:11,color:"#94a3b8",marginTop:3}}>{k.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+          {/* Grafico cartera por estado */}
+          <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Cartera por Estado</div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:20}}>Distribucion de solicitudes por flujo de aprobacion</div>
+            {estadosBar.map((e,i)=>(
+              <div key={i} style={{marginBottom:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+                  <span style={{fontWeight:600,color:"#374151"}}>{e.label}</span>
+                  <span style={{color:e.color,fontWeight:700}}>{e.count} | S/ {(e.monto/1000).toFixed(1)}k</span>
+                </div>
+                <div style={{height:10,background:"#f1f5f9",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${(e.monto/maxMonto)*100}%`,background:e.color,borderRadius:10,minWidth:e.count>0?8:0,transition:"width 0.5s"}}/>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Grafico mora por banda */}
+          <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Analisis de Mora</div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:20}}>Cartera vencida por banda de mora</div>
+            {moraBar.map((e,i)=>(
+              <div key={i} style={{marginBottom:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+                  <span style={{fontWeight:600,color:"#374151"}}>{e.label}</span>
+                  <span style={{color:e.color,fontWeight:700}}>{e.count} | S/ {(e.monto).toFixed(0)}</span>
+                </div>
+                <div style={{height:10,background:"#f1f5f9",borderRadius:10,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${(e.monto/maxMoraMonto)*100}%`,background:e.color,borderRadius:10,minWidth:e.count>0?8:0}}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,marginBottom:20}}>
+          {/* Distribucion de score */}
+          <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Score Crediticio</div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:20}}>Distribucion por rango de score</div>
+            {scoreRanges.map((e,i)=>(
+              <div key={i} style={{marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
+                  <span style={{color:"#374151"}}>{e.label} pts</span>
+                  <span style={{fontWeight:700,color:e.color}}>{e.count}</span>
+                </div>
+                <div style={{height:8,background:"#f1f5f9",borderRadius:10}}>
+                  <div style={{height:"100%",width:`${(e.count/maxScore)*100}%`,background:e.color,borderRadius:10,minWidth:e.count>0?6:0}}/>
+                </div>
+              </div>
+            ))}
+            <div style={{marginTop:16,padding:"10px 14px",background:"#f0fdf4",borderRadius:8,fontSize:12}}>
+              <div style={{color:"#64748b"}}>Score promedio</div>
+              <div style={{fontSize:20,fontWeight:800,color:"#059669"}}>
+                {solicitudes.filter(s=>s.score!=null).length > 0
+                  ? (solicitudes.filter(s=>s.score!=null).reduce((a,s)=>a+Number(s.score),0) / solicitudes.filter(s=>s.score!=null).length).toFixed(1)
+                  : "—"} pts
+              </div>
+            </div>
+          </div>
+
+          {/* Captaciones */}
+          <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Captaciones</div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:20}}>Cuentas de ahorro activas</div>
+            <div style={{textAlign:"center",padding:"20px 0"}}>
+              <div style={{fontSize:36,fontWeight:800,color:"#0ea5e9"}}>S/ {(totalAhorros/1000).toFixed(1)}k</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Total captado</div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:8}}>
+              {[
+                {label:"Cuentas activas",value:cuentas.length,color:"#0ea5e9"},
+                {label:"Promedio saldo",value:`S/ ${cuentas.length>0?(totalAhorros/cuentas.length).toFixed(0):"0"}`,color:"#059669"},
+              ].map((item,i)=>(
+                <div key={i} style={{background:"#f0f9ff",borderRadius:8,padding:"10px 12px"}}>
+                  <div style={{fontSize:11,color:"#64748b"}}>{item.label}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:item.color}}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop:12}}>
+              <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>Meta promedio completada</div>
+              <div style={{height:8,background:"#f1f5f9",borderRadius:10}}>
+                <div style={{height:"100%",width:"62%",background:"linear-gradient(90deg,#0ea5e9,#059669)",borderRadius:10}}/>
+              </div>
+              <div style={{fontSize:11,color:"#0ea5e9",marginTop:3}}>62% promedio</div>
+            </div>
+          </div>
+
+          {/* Resumen ejecutivo */}
+          <div style={{background:"linear-gradient(135deg,#0f172a,#1e3a5f)",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",color:"#fff"}}>
+            <div style={{fontSize:14,fontWeight:700,marginBottom:4}}>Resumen Ejecutivo</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginBottom:20}}>KPIs clave del sistema</div>
+            {[
+              {label:"Tasa aprobacion",value:`${solicitudes.length>0?((desembolsadas.length+aprobadas.length)/solicitudes.length*100).toFixed(1):0}%`,icon:"✅"},
+              {label:"Creditos desembolsados",value:desembolsadas.length,icon:"💰"},
+              {label:"En evaluacion activa",value:pendientes.length+enComite.length,icon:"⏳"},
+              {label:"Mora ponderada",value:`${ratiMora.toFixed(2)}%`,icon:"⚠️"},
+              {label:"Clientes con ahorro",value:cuentas.length,icon:"🏦"},
+            ].map((item,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+                <span style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>{item.icon} {item.label}</span>
+                <span style={{fontSize:14,fontWeight:700,color:"#38bdf8"}}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tabla detalle RDS */}
+        <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Detalle de Cartera Evaluada</div>
+          <div style={{fontSize:12,color:"#64748b",marginBottom:16}}>Solicitudes con scoring completado</div>
+          <table style={{...styles.table}}>
+            <thead>
+              <tr style={styles.thead}>
+                {["Cliente","Monto","Plazo","TEA","Cuota","RDS","Score","Estado"].map(h=>(
+                  <th key={h} style={styles.th}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {solicitudes.filter(s=>s.score!=null).slice(0,10).map((s,i)=>{
+                const cfg = estadoConfig[s.estado]||estadoConfig.pendiente;
+                const rdsOk = s.rds<=40;
+                const scoreOk = s.score>=60;
+                return (
+                  <tr key={i} style={{background:i%2===0?"#fff":"#f8fafc"}}>
+                    <td style={styles.td}>{s.user_id?.slice(0,8)}...</td>
+                    <td style={{...styles.td,fontWeight:700}}>S/ {Number(s.monto).toFixed(0)}</td>
+                    <td style={styles.td}>{s.plazo_meses}m</td>
+                    <td style={styles.td}>{s.tasa_anual}%</td>
+                    <td style={{...styles.td,color:"#059669"}}>S/ {Number(s.cuota_mensual).toFixed(2)}</td>
+                    <td style={styles.td}><span style={{...styles.badge,background:rdsOk?"#ecfdf5":"#fef2f2",color:rdsOk?"#059669":"#dc2626"}}>{s.rds}%</span></td>
+                    <td style={styles.td}><span style={{...styles.badge,background:scoreOk?"#ecfdf5":"#fef3c7",color:scoreOk?"#059669":"#d97706"}}>{s.score}</span></td>
+                    <td style={styles.td}><span style={{...styles.badge,background:cfg.bg,color:cfg.color}}>{cfg.label}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   const renderContenido = () => {
+    if (vista==="reportes") return renderReportes();
     if (vista==="dashboard") {
       return (
         <>
@@ -170,7 +378,7 @@ export default function Core() {
             {[
               {label:"Total Solicitudes",value:solicitudes.length,color:"#1e3a5f",icon:"📋"},
               {label:"Pendientes",value:pendientes.length,color:"#d97706",icon:"⏳"},
-              {label:"En Comité",value:enComite.length,color:"#7c3aed",icon:"👥"},
+              {label:"En Comite",value:enComite.length,color:"#7c3aed",icon:"👥"},
               {label:"Desembolsadas",value:desembolsadas.length,color:"#059669",icon:"💰"},
             ].map((k,i)=>(
               <div key={i} style={styles.kpiCard}>
@@ -181,7 +389,7 @@ export default function Core() {
             ))}
           </div>
           <div style={styles.tableCard}>
-            <div style={styles.tableHeader}><span style={styles.tableTitle}>Últimas solicitudes</span></div>
+            <div style={styles.tableHeader}><span style={styles.tableTitle}>Ultimas solicitudes</span></div>
             {renderTabla(solicitudes.slice(0,5))}
           </div>
         </>
@@ -204,31 +412,12 @@ export default function Core() {
         </div>
       );
     }
-    if (vista==="comite") {
-      return (
-        <div style={styles.tableCard}>
-          <div style={styles.tableHeader}><span style={styles.tableTitle}>Propuesta y Comité</span></div>
-          {renderTabla(enComite)}
-        </div>
-      );
-    }
-    if (vista==="desembolso") {
-      return (
-        <div style={styles.tableCard}>
-          <div style={styles.tableHeader}><span style={styles.tableTitle}>Aprobación y Desembolso</span></div>
-          {renderTabla(aprobadas)}
-        </div>
-      );
-    }
-
-    // ── MORA CON HISTORIAL ──────────────────────────────────────────────────
+    if (vista==="comite") return (<div style={styles.tableCard}><div style={styles.tableHeader}><span style={styles.tableTitle}>Propuesta y Comite</span></div>{renderTabla(enComite)}</div>);
+    if (vista==="desembolso") return (<div style={styles.tableCard}><div style={styles.tableHeader}><span style={styles.tableTitle}>Aprobacion y Desembolso</span></div>{renderTabla(aprobadas)}</div>);
     if (vista==="mora") {
       return (
         <div style={styles.tableCard}>
-          <div style={styles.tableHeader}>
-            <span style={styles.tableTitle}>Bandeja de Mora — {mora.length} créditos</span>
-          </div>
-          {/* KPIs por banda */}
+          <div style={styles.tableHeader}><span style={styles.tableTitle}>Bandeja de Mora — {mora.length} creditos</span></div>
           <div style={{padding:"16px 20px 0",display:"flex",gap:10,flexWrap:"wrap"}}>
             {Object.entries(bandaConfig).map(([b,cfg])=>(
               <div key={b} style={{padding:"6px 14px",borderRadius:20,fontSize:12,fontWeight:600,background:cfg.bg,color:cfg.color}}>
@@ -239,9 +428,7 @@ export default function Core() {
           <table style={styles.table}>
             <thead>
               <tr style={styles.thead}>
-                {["Banda","Días Mora","Monto Deuda","Estado","Última Gestión","Observaciones","Acciones"].map(h=>(
-                  <th key={h} style={styles.th}>{h}</th>
-                ))}
+                {["Banda","Dias Mora","Monto Deuda","Estado","Ultima Gestion","Observaciones","Acciones"].map(h=>(<th key={h} style={styles.th}>{h}</th>))}
               </tr>
             </thead>
             <tbody>
@@ -257,47 +444,29 @@ export default function Core() {
                       <td style={{...styles.td,fontWeight:700,color:cfg.color}}>{m.dias_mora}</td>
                       <td style={styles.td}>S/ {Number(m.monto_deuda).toFixed(2)}</td>
                       <td style={styles.td}>
-                        <span style={{...styles.badge,
-                          background: m.estado_gestion==="gestionado"?"#ecfdf5":m.estado_gestion==="castigado"?"#f8fafc":"#fffbeb",
-                          color: m.estado_gestion==="gestionado"?"#059669":m.estado_gestion==="castigado"?"#475569":"#d97706"
-                        }}>
+                        <span style={{...styles.badge,background:m.estado_gestion==="gestionado"?"#ecfdf5":m.estado_gestion==="castigado"?"#f8fafc":"#fffbeb",color:m.estado_gestion==="gestionado"?"#059669":m.estado_gestion==="castigado"?"#475569":"#d97706"}}>
                           {m.estado_gestion}
                         </span>
                       </td>
-                      <td style={{...styles.td,fontSize:11,color:"#94a3b8"}}>
-                        {m.fecha_ultima_gestion ? new Date(m.fecha_ultima_gestion).toLocaleDateString("es-PE") : "Sin gestión"}
-                      </td>
-                      <td style={{...styles.td,maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                        {m.observaciones||"—"}
-                      </td>
+                      <td style={{...styles.td,fontSize:11,color:"#94a3b8"}}>{m.fecha_ultima_gestion ? new Date(m.fecha_ultima_gestion).toLocaleDateString("es-PE") : "Sin gestion"}</td>
+                      <td style={{...styles.td,maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.observaciones||"—"}</td>
                       <td style={styles.td}>
                         <div style={styles.acciones}>
-                          {/* Registrar nueva gestión */}
                           {!["castigado","judicial"].includes(m.estado_gestion) && (
-                            <button style={styles.btnGestionar} onClick={()=>{setGestionModal(m);setObsGestion("");}}>
-                              ✏️ Gestionar
-                            </button>
+                            <button style={styles.btnGestionar} onClick={()=>{setGestionModal(m);setObsGestion("");}}>Gestionar</button>
                           )}
-                          {/* Ver historial expandible */}
                           <button style={{...styles.btnHistorial,fontSize:11}} onClick={()=>setMoraExpandida(expandido?null:m.id)}>
-                            {expandido?"▲ Ocultar":"📋 Historial"}
+                            {expandido?"Ocultar":"Historial"}
                           </button>
                         </div>
                       </td>
                     </tr>
-                    {/* Fila expandida con historial */}
                     {expandido && (
                       <tr key={`h-${i}`} style={{background:"#f0f9ff"}}>
                         <td colSpan={7} style={{padding:"16px 24px"}}>
-                          <div style={{fontSize:13,fontWeight:700,color:"#1e3a5f",marginBottom:10}}>
-                            📋 Historial de Gestiones — {m.banda} ({m.dias_mora} días mora)
-                          </div>
+                          <div style={{fontSize:13,fontWeight:700,color:"#1e3a5f",marginBottom:10}}>Historial de Gestiones — {m.banda} ({m.dias_mora} dias mora)</div>
                           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:12}}>
-                            {[
-                              {label:"Monto Deuda",value:`S/ ${Number(m.monto_deuda).toFixed(2)}`,color:"#dc2626"},
-                              {label:"Días en Mora",value:`${m.dias_mora} días`,color:cfg.color},
-                              {label:"Estado Gestión",value:m.estado_gestion,color:"#0ea5e9"},
-                            ].map((item,j)=>(
+                            {[{label:"Monto Deuda",value:`S/ ${Number(m.monto_deuda).toFixed(2)}`,color:"#dc2626"},{label:"Dias en Mora",value:`${m.dias_mora} dias`,color:cfg.color},{label:"Estado Gestion",value:m.estado_gestion,color:"#0ea5e9"}].map((item,j)=>(
                               <div key={j} style={{background:"#fff",borderRadius:8,padding:"10px 14px",border:"1px solid #e0f2fe"}}>
                                 <div style={{fontSize:11,color:"#64748b"}}>{item.label}</div>
                                 <div style={{fontSize:14,fontWeight:700,color:item.color}}>{item.value}</div>
@@ -305,17 +474,12 @@ export default function Core() {
                             ))}
                           </div>
                           <div style={{background:"#fff",borderRadius:8,padding:"12px 16px",border:"1px solid #e0f2fe"}}>
-                            <div style={{fontSize:12,fontWeight:600,color:"#64748b",marginBottom:6}}>ÚLTIMA OBSERVACIÓN REGISTRADA</div>
-                            <div style={{fontSize:13,color:"#374151"}}>{m.observaciones||"Sin observaciones registradas"}</div>
-                            {m.fecha_ultima_gestion && (
-                              <div style={{fontSize:11,color:"#94a3b8",marginTop:6}}>
-                                Registrado: {new Date(m.fecha_ultima_gestion).toLocaleString("es-PE")}
-                              </div>
-                            )}
+                            <div style={{fontSize:12,fontWeight:600,color:"#64748b",marginBottom:6}}>ULTIMA OBSERVACION</div>
+                            <div style={{fontSize:13,color:"#374151"}}>{m.observaciones||"Sin observaciones"}</div>
+                            {m.fecha_ultima_gestion&&<div style={{fontSize:11,color:"#94a3b8",marginTop:6}}>{new Date(m.fecha_ultima_gestion).toLocaleString("es-PE")}</div>}
                           </div>
-                          {/* Reglas de transición */}
                           <div style={{marginTop:10,padding:"10px 14px",background:"#fef3c7",borderRadius:8,fontSize:12,color:"#92400e"}}>
-                            ⚠️ Regla: {m.dias_mora>=181?"Castigo obligatorio (>180 días)":m.dias_mora>=121?"Derivar a Judicial (≥121 días)":m.dias_mora>=61?"Banda Tardía — requiere gestión intensiva":m.dias_mora>=31?"Banda Temprana — contacto preventivo":"Banda Preventiva — alerta temprana"}
+                            Regla: {m.dias_mora>=181?"Castigo obligatorio (>180 dias)":m.dias_mora>=121?"Derivar a Judicial":m.dias_mora>=61?"Banda Tardia — gestion intensiva":m.dias_mora>=31?"Banda Temprana — contacto preventivo":"Banda Preventiva — alerta temprana"}
                           </div>
                         </td>
                       </tr>
@@ -328,23 +492,16 @@ export default function Core() {
         </div>
       );
     }
-
     if (vista==="ahorros") {
       return (
         <div style={styles.tableCard}>
           <div style={styles.tableHeader}><span style={styles.tableTitle}>Captaciones — Cuentas de Ahorro ({cuentas.length})</span></div>
           <table style={styles.table}>
             <thead>
-              <tr style={styles.thead}>
-                {["Cliente ID","Saldo","Meta Ahorro","Tasa Interes","Fecha Apertura"].map(h=>(
-                  <th key={h} style={styles.th}>{h}</th>
-                ))}
-              </tr>
+              <tr style={styles.thead}>{["Cliente ID","Saldo","Meta Ahorro","Tasa Interes","Fecha Apertura"].map(h=>(<th key={h} style={styles.th}>{h}</th>))}</tr>
             </thead>
             <tbody>
-              {cuentas.length===0 ? (
-                <tr><td colSpan={5} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>Sin cuentas registradas</td></tr>
-              ) : cuentas.map((c,i)=>(
+              {cuentas.length===0?(<tr><td colSpan={5} style={{textAlign:"center",padding:32,color:"#94a3b8"}}>Sin cuentas</td></tr>):cuentas.map((c,i)=>(
                 <tr key={i} style={{background:i%2===0?"#fff":"#f8fafc"}}>
                   <td style={styles.td}>{c.user_id?.slice(0,8)}...</td>
                   <td style={{...styles.td,fontWeight:700,color:"#059669"}}>S/ {Number(c.saldo).toFixed(2)}</td>
@@ -361,95 +518,73 @@ export default function Core() {
     return null;
   };
 
-  // ── MODAL HISTORIAL CLIENTE ────────────────────────────────────────────────
   const renderHistorialModal = () => {
     if (!historialModal) return null;
-    const {userId, solicitudes:sols, cuenta} = historialModal;
+    const {userId,solicitudes:sols,cuenta} = historialModal;
     return (
       <div style={styles.overlay} onClick={e=>e.target===e.currentTarget&&setHistorialModal(null)}>
         <div style={{...styles.modal,width:620,maxHeight:"80vh",overflowY:"auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <h3 style={{margin:0,fontSize:17,color:"#0f172a"}}>📂 Historial del Cliente</h3>
-            <button onClick={()=>setHistorialModal(null)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#64748b"}}>✕</button>
+            <h3 style={{margin:0,fontSize:17,color:"#0f172a"}}>Historial del Cliente</h3>
+            <button onClick={()=>setHistorialModal(null)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#64748b"}}>X</button>
           </div>
           <div style={{fontSize:12,color:"#64748b",marginBottom:16,padding:"8px 12px",background:"#f8fafc",borderRadius:8}}>ID: {userId}</div>
           <div style={{marginBottom:20}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#1e3a5f",marginBottom:8}}>🏦 Cuenta de Ahorro</div>
-            {cuenta ? (
+            <div style={{fontSize:13,fontWeight:700,color:"#1e3a5f",marginBottom:8}}>Cuenta de Ahorro</div>
+            {cuenta?(
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-                {[
-                  {label:"Saldo",value:`S/ ${Number(cuenta.saldo).toFixed(2)}`,color:"#059669"},
-                  {label:"Meta",value:`S/ ${Number(cuenta.meta_ahorro).toFixed(2)}`,color:"#0ea5e9"},
-                  {label:"Tasa",value:`${cuenta.tasa_interes}% TEA`,color:"#7c3aed"},
-                ].map((item,i)=>(
+                {[{label:"Saldo",value:`S/ ${Number(cuenta.saldo).toFixed(2)}`,color:"#059669"},{label:"Meta",value:`S/ ${Number(cuenta.meta_ahorro).toFixed(2)}`,color:"#0ea5e9"},{label:"Tasa",value:`${cuenta.tasa_interes}% TEA`,color:"#7c3aed"}].map((item,i)=>(
                   <div key={i} style={{background:"#f8fafc",borderRadius:10,padding:"10px 14px"}}>
                     <div style={{fontSize:11,color:"#64748b"}}>{item.label}</div>
                     <div style={{fontSize:15,fontWeight:700,color:item.color}}>{item.value}</div>
                   </div>
                 ))}
               </div>
-            ) : <div style={{color:"#94a3b8",fontSize:13}}>Sin cuenta de ahorro registrada</div>}
+            ):<div style={{color:"#94a3b8",fontSize:13}}>Sin cuenta</div>}
           </div>
           <div>
-            <div style={{fontSize:13,fontWeight:700,color:"#1e3a5f",marginBottom:8}}>📋 Solicitudes ({sols.length})</div>
-            {sols.map((s,i)=>{
-              const cfg = estadoConfig[s.estado]||estadoConfig.pendiente;
-              return (
-                <div key={i} style={{border:"1px solid #f1f5f9",borderRadius:10,padding:"12px 14px",marginBottom:8,background:"#fff"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div>
-                      <span style={{fontWeight:700,color:"#0f172a"}}>S/ {Number(s.monto).toFixed(2)}</span>
-                      <span style={{color:"#64748b",fontSize:12,marginLeft:8}}>{s.plazo_meses} meses — TEA {s.tasa_anual}%</span>
-                    </div>
-                    <span style={{...styles.badge,background:cfg.bg,color:cfg.color}}>{cfg.label}</span>
-                  </div>
-                  <div style={{display:"flex",gap:16,marginTop:8,fontSize:12,color:"#64748b"}}>
-                    <span>Cuota: <b style={{color:"#059669"}}>S/ {Number(s.cuota_mensual).toFixed(2)}</b></span>
-                    {s.rds!=null&&<span>RDS: <b>{s.rds}%</b></span>}
-                    {s.score!=null&&<span>Score: <b>{s.score}</b></span>}
-                  </div>
+            <div style={{fontSize:13,fontWeight:700,color:"#1e3a5f",marginBottom:8}}>Solicitudes ({sols.length})</div>
+            {sols.map((s,i)=>{const cfg=estadoConfig[s.estado]||estadoConfig.pendiente;return(
+              <div key={i} style={{border:"1px solid #f1f5f9",borderRadius:10,padding:"12px 14px",marginBottom:8,background:"#fff"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div><span style={{fontWeight:700,color:"#0f172a"}}>S/ {Number(s.monto).toFixed(2)}</span><span style={{color:"#64748b",fontSize:12,marginLeft:8}}>{s.plazo_meses}m TEA {s.tasa_anual}%</span></div>
+                  <span style={{...styles.badge,background:cfg.bg,color:cfg.color}}>{cfg.label}</span>
                 </div>
-              );
-            })}
+                <div style={{display:"flex",gap:16,marginTop:8,fontSize:12,color:"#64748b"}}>
+                  <span>Cuota: <b style={{color:"#059669"}}>S/ {Number(s.cuota_mensual).toFixed(2)}</b></span>
+                  {s.rds!=null&&<span>RDS: <b>{s.rds}%</b></span>}
+                  {s.score!=null&&<span>Score: <b>{s.score}</b></span>}
+                </div>
+              </div>
+            );})}
           </div>
         </div>
       </div>
     );
   };
 
-  // ── MODAL INFORME REC ──────────────────────────────────────────────────────
   const renderInformeModal = () => {
     if (!informeModal) return null;
     const s = informeModal;
-    const disponible = s.ingreso_neto&&s.gasto_familiar ? s.ingreso_neto-s.gasto_familiar : null;
-    const capacidadOK = s.rds!=null ? s.rds<=40 : null;
-    const scoreOK = s.score!=null ? s.score>=60 : null;
-    const nivelLabel = {asesor:"Asesor de Negocios",comite:"Comité de Créditos",jefe_regional:"Jefe Regional"};
+    const disponible = s.ingreso_neto&&s.gasto_familiar?s.ingreso_neto-s.gasto_familiar:null;
+    const capacidadOK = s.rds!=null?s.rds<=40:null;
+    const scoreOK = s.score!=null?s.score>=60:null;
+    const nivelLabel = {asesor:"Asesor de Negocios",comite:"Comite de Creditos",jefe_regional:"Jefe Regional"};
     const fechaHoy = new Date().toLocaleDateString("es-PE",{day:"2-digit",month:"long",year:"numeric"});
     return (
       <div style={styles.overlay} onClick={e=>e.target===e.currentTarget&&setInformeModal(null)}>
         <div style={{...styles.modal,width:560,maxHeight:"85vh",overflowY:"auto"}}>
-          <div style={{background:"linear-gradient(135deg, #1e3a5f, #0ea5e9)",borderRadius:10,padding:"16px 20px",marginBottom:20,color:"#fff"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div>
-                <div style={{fontWeight:800,fontSize:16}}>CMAC MAYNAS</div>
-                <div style={{fontSize:12,opacity:0.85}}>Informe de Evaluación Crediticia (REC)</div>
-              </div>
-              <button onClick={()=>setInformeModal(null)} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:6,color:"#fff",cursor:"pointer",padding:"4px 10px",fontSize:13}}>✕</button>
+          <div style={{background:"linear-gradient(135deg,#1e3a5f,#0ea5e9)",borderRadius:10,padding:"16px 20px",marginBottom:20,color:"#fff"}}>
+            <div style={{display:"flex",justifyContent:"space-between"}}>
+              <div><div style={{fontWeight:800,fontSize:16}}>CMAC MAYNAS</div><div style={{fontSize:12,opacity:0.85}}>Informe de Evaluacion Crediticia (REC)</div></div>
+              <button onClick={()=>setInformeModal(null)} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:6,color:"#fff",cursor:"pointer",padding:"4px 10px"}}>X</button>
             </div>
             <div style={{marginTop:12,fontSize:12,opacity:0.8}}>Fecha: {fechaHoy}</div>
           </div>
           <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#64748b",textTransform:"uppercase",marginBottom:8}}>Datos del Crédito</div>
+            <div style={{fontSize:12,fontWeight:700,color:"#64748b",textTransform:"uppercase",marginBottom:8}}>Datos del Credito</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {[
-                {label:"Monto Solicitado",value:`S/ ${Number(s.monto).toFixed(2)}`},
-                {label:"Plazo",value:`${s.plazo_meses} meses`},
-                {label:"TEA",value:`${s.tasa_anual}%`},
-                {label:"Cuota Mensual",value:`S/ ${Number(s.cuota_mensual).toFixed(2)}`},
-                {label:"Tipo",value:s.proposito||"Capital de trabajo"},
-                {label:"Nivel Aprobación",value:nivelLabel[s.nivel_aprobacion]||s.nivel_aprobacion||"—"},
-              ].map((item,i)=>(
+              {[{label:"Monto",value:`S/ ${Number(s.monto).toFixed(2)}`},{label:"Plazo",value:`${s.plazo_meses} meses`},{label:"TEA",value:`${s.tasa_anual}%`},{label:"Cuota",value:`S/ ${Number(s.cuota_mensual).toFixed(2)}`},{label:"Tipo",value:s.proposito||"Capital de trabajo"},{label:"Nivel",value:nivelLabel[s.nivel_aprobacion]||"—"}].map((item,i)=>(
                 <div key={i} style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px"}}>
                   <div style={{fontSize:11,color:"#94a3b8"}}>{item.label}</div>
                   <div style={{fontSize:14,fontWeight:600,color:"#0f172a"}}>{item.value}</div>
@@ -458,14 +593,9 @@ export default function Core() {
             </div>
           </div>
           <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#64748b",textTransform:"uppercase",marginBottom:8}}>Evaluación Financiera</div>
+            <div style={{fontSize:12,fontWeight:700,color:"#64748b",textTransform:"uppercase",marginBottom:8}}>Evaluacion Financiera</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {[
-                {label:"Ingreso Neto",value:s.ingreso_neto?`S/ ${Number(s.ingreso_neto).toFixed(2)}`:"—"},
-                {label:"Gasto Familiar",value:s.gasto_familiar?`S/ ${Number(s.gasto_familiar).toFixed(2)}`:"—"},
-                {label:"Ingreso Disponible",value:disponible?`S/ ${Number(disponible).toFixed(2)}`:"—"},
-                {label:"RDS",value:s.rds!=null?`${s.rds}%`:"—"},
-              ].map((item,i)=>(
+              {[{label:"Ingreso Neto",value:s.ingreso_neto?`S/ ${Number(s.ingreso_neto).toFixed(2)}`:"—"},{label:"Gasto Familiar",value:s.gasto_familiar?`S/ ${Number(s.gasto_familiar).toFixed(2)}`:"—"},{label:"Disponible",value:disponible?`S/ ${Number(disponible).toFixed(2)}`:"—"},{label:"RDS",value:s.rds!=null?`${s.rds}%`:"—"}].map((item,i)=>(
                 <div key={i} style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px"}}>
                   <div style={{fontSize:11,color:"#94a3b8"}}>{item.label}</div>
                   <div style={{fontSize:14,fontWeight:600,color:"#0f172a"}}>{item.value}</div>
@@ -473,37 +603,27 @@ export default function Core() {
               ))}
             </div>
           </div>
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#64748b",textTransform:"uppercase",marginBottom:8}}>Resultado del Scoring</div>
-            <div style={{display:"flex",gap:10}}>
-              <div style={{flex:1,borderRadius:10,padding:"14px 16px",background:capacidadOK===null?"#f8fafc":capacidadOK?"#ecfdf5":"#fef2f2",border:`1.5px solid ${capacidadOK===null?"#e2e8f0":capacidadOK?"#a7f3d0":"#fecaca"}`}}>
-                <div style={{fontSize:11,color:"#64748b"}}>Capacidad de Pago (RDS ≤ 40%)</div>
-                <div style={{fontSize:20,fontWeight:800,color:capacidadOK===null?"#94a3b8":capacidadOK?"#059669":"#dc2626"}}>
-                  {capacidadOK===null?"—":capacidadOK?"✓ APTO":"✗ NO APTO"}
-                </div>
-                <div style={{fontSize:12,color:"#64748b"}}>RDS: {s.rds!=null?`${s.rds}%`:"Sin evaluar"}</div>
-              </div>
-              <div style={{flex:1,borderRadius:10,padding:"14px 16px",background:scoreOK===null?"#f8fafc":scoreOK?"#ecfdf5":"#fef3c7",border:`1.5px solid ${scoreOK===null?"#e2e8f0":scoreOK?"#a7f3d0":"#fde68a"}`}}>
-                <div style={{fontSize:11,color:"#64748b"}}>Score Crediticio (≥ 60)</div>
-                <div style={{fontSize:20,fontWeight:800,color:scoreOK===null?"#94a3b8":scoreOK?"#059669":"#d97706"}}>
-                  {s.score!=null?s.score:"—"} pts
-                </div>
-                <div style={{fontSize:12,color:"#64748b"}}>{scoreOK===null?"Sin evaluar":scoreOK?"Aprobado por scoring":"Requiere comité"}</div>
-              </div>
+          <div style={{display:"flex",gap:10,marginBottom:16}}>
+            <div style={{flex:1,borderRadius:10,padding:"14px 16px",background:capacidadOK===null?"#f8fafc":capacidadOK?"#ecfdf5":"#fef2f2",border:`1.5px solid ${capacidadOK===null?"#e2e8f0":capacidadOK?"#a7f3d0":"#fecaca"}`}}>
+              <div style={{fontSize:11,color:"#64748b"}}>Capacidad de Pago</div>
+              <div style={{fontSize:20,fontWeight:800,color:capacidadOK===null?"#94a3b8":capacidadOK?"#059669":"#dc2626"}}>{capacidadOK===null?"—":capacidadOK?"APTO":"NO APTO"}</div>
+              <div style={{fontSize:12,color:"#64748b"}}>RDS: {s.rds!=null?`${s.rds}%`:"Sin evaluar"}</div>
+            </div>
+            <div style={{flex:1,borderRadius:10,padding:"14px 16px",background:scoreOK===null?"#f8fafc":scoreOK?"#ecfdf5":"#fef3c7",border:`1.5px solid ${scoreOK===null?"#e2e8f0":scoreOK?"#a7f3d0":"#fde68a"}`}}>
+              <div style={{fontSize:11,color:"#64748b"}}>Score Crediticio</div>
+              <div style={{fontSize:20,fontWeight:800,color:scoreOK===null?"#94a3b8":scoreOK?"#059669":"#d97706"}}>{s.score!=null?s.score:"—"} pts</div>
+              <div style={{fontSize:12,color:"#64748b"}}>{scoreOK===null?"Sin evaluar":scoreOK?"Aprobado":"Requiere comite"}</div>
             </div>
           </div>
-          <div style={{borderRadius:10,padding:"14px 16px",background:(estadoConfig[s.estado]||estadoConfig.pendiente).bg,border:`1.5px solid ${(estadoConfig[s.estado]||estadoConfig.pendiente).color}30`}}>
-            <div style={{fontSize:12,color:"#64748b",marginBottom:4}}>Resolución actual</div>
-            <div style={{fontSize:16,fontWeight:800,color:(estadoConfig[s.estado]||estadoConfig.pendiente).color}}>
-              {(estadoConfig[s.estado]||estadoConfig.pendiente).label}
-            </div>
+          <div style={{borderRadius:10,padding:"14px 16px",background:(estadoConfig[s.estado]||estadoConfig.pendiente).bg}}>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:4}}>Resolucion actual</div>
+            <div style={{fontSize:16,fontWeight:800,color:(estadoConfig[s.estado]||estadoConfig.pendiente).color}}>{(estadoConfig[s.estado]||estadoConfig.pendiente).label}</div>
           </div>
         </div>
       </div>
     );
   };
 
-  // ── MODAL GESTIÓN MORA ────────────────────────────────────────────────────
   const renderGestionModal = () => {
     if (!gestionModal) return null;
     const cfg = bandaConfig[gestionModal.banda]||bandaConfig.preventiva;
@@ -511,59 +631,28 @@ export default function Core() {
       <div style={styles.overlay} onClick={e=>e.target===e.currentTarget&&setGestionModal(null)}>
         <div style={{...styles.modal,width:460}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <h3 style={{margin:0,fontSize:17,color:"#0f172a"}}>✏️ Registrar Gestión de Cobranza</h3>
-            <button onClick={()=>setGestionModal(null)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#64748b"}}>✕</button>
+            <h3 style={{margin:0,fontSize:17,color:"#0f172a"}}>Registrar Gestion de Cobranza</h3>
+            <button onClick={()=>setGestionModal(null)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",color:"#64748b"}}>X</button>
           </div>
-
-          {/* Info del crédito */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
-            <div style={{background:cfg.bg,borderRadius:8,padding:"10px 12px"}}>
-              <div style={{fontSize:11,color:"#64748b"}}>Banda</div>
-              <div style={{fontSize:13,fontWeight:700,color:cfg.color}}>{cfg.icon} {gestionModal.banda}</div>
-            </div>
-            <div style={{background:"#fef2f2",borderRadius:8,padding:"10px 12px"}}>
-              <div style={{fontSize:11,color:"#64748b"}}>Días mora</div>
-              <div style={{fontSize:13,fontWeight:700,color:"#dc2626"}}>{gestionModal.dias_mora} días</div>
-            </div>
-            <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
-              <div style={{fontSize:11,color:"#64748b"}}>Deuda</div>
-              <div style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>S/ {Number(gestionModal.monto_deuda).toFixed(2)}</div>
-            </div>
+            <div style={{background:cfg.bg,borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:11,color:"#64748b"}}>Banda</div><div style={{fontSize:13,fontWeight:700,color:cfg.color}}>{gestionModal.banda}</div></div>
+            <div style={{background:"#fef2f2",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:11,color:"#64748b"}}>Dias mora</div><div style={{fontSize:13,fontWeight:700,color:"#dc2626"}}>{gestionModal.dias_mora}</div></div>
+            <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:11,color:"#64748b"}}>Deuda</div><div style={{fontSize:13,fontWeight:700,color:"#0f172a"}}>S/ {Number(gestionModal.monto_deuda).toFixed(2)}</div></div>
           </div>
-
-          {/* Última gestión */}
-          {gestionModal.observaciones && (
+          {gestionModal.observaciones&&(
             <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12}}>
-              <div style={{color:"#64748b",marginBottom:4}}>Última observación:</div>
+              <div style={{color:"#64748b",marginBottom:4}}>Ultima observacion:</div>
               <div style={{color:"#374151"}}>{gestionModal.observaciones}</div>
-              {gestionModal.fecha_ultima_gestion && (
-                <div style={{color:"#94a3b8",marginTop:4,fontSize:11}}>
-                  {new Date(gestionModal.fecha_ultima_gestion).toLocaleString("es-PE")}
-                </div>
-              )}
             </div>
           )}
-
-          {/* Nueva gestión */}
           <div style={styles.field}>
-            <label style={styles.label}>Nueva observación de gestión</label>
-            <textarea
-              rows={4}
-              style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid #e2e8f0",fontSize:13,resize:"vertical",fontFamily:"inherit"}}
-              value={obsGestion}
-              onChange={e=>setObsGestion(e.target.value)}
-              placeholder="Ej: Se contactó al cliente vía telefónica, comprometió pago para el 30/06/2026..."
-            />
+            <label style={styles.label}>Nueva observacion</label>
+            <textarea rows={4} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid #e2e8f0",fontSize:13,resize:"vertical",fontFamily:"inherit"}} value={obsGestion} onChange={e=>setObsGestion(e.target.value)} placeholder="Ej: Se contacto al cliente, comprometio pago..."/>
           </div>
-
           <div style={styles.modalBtns}>
             <button style={styles.btnCancel} onClick={()=>setGestionModal(null)}>Cancelar</button>
-            <button
-              style={{...styles.btnEval,opacity:(!obsGestion.trim()||guardandoGestion)?0.6:1}}
-              onClick={handleGestion}
-              disabled={!obsGestion.trim()||guardandoGestion}
-            >
-              {guardandoGestion?"Guardando...":"✓ Registrar Gestión"}
+            <button style={{...styles.btnEval,opacity:(!obsGestion.trim()||guardandoGestion)?0.6:1}} onClick={handleGestion} disabled={!obsGestion.trim()||guardandoGestion}>
+              {guardandoGestion?"Guardando...":"Registrar Gestion"}
             </button>
           </div>
         </div>
@@ -573,19 +662,13 @@ export default function Core() {
 
   return (
     <div style={styles.page}>
-      {evalModal && (
+      {evalModal&&(
         <div style={styles.overlay} onClick={e=>e.target===e.currentTarget&&setEvalModal(null)}>
           <div style={styles.modal}>
-            <h3 style={styles.modalTitle}>Registrar Evaluación — S/ {Number(evalModal.monto).toFixed(2)}</h3>
+            <h3 style={styles.modalTitle}>Registrar Evaluacion — S/ {Number(evalModal.monto).toFixed(2)}</h3>
             <p style={styles.modalSub}>Cuota mensual: S/ {Number(evalModal.cuota_mensual).toFixed(2)}</p>
-            <div style={styles.field}>
-              <label style={styles.label}>Ingreso Neto Mensual (S/)</label>
-              <input type="number" style={styles.input} value={ingresoNeto} onChange={e=>setIngresoNeto(e.target.value)} placeholder="Ej: 2500" />
-            </div>
-            <div style={styles.field}>
-              <label style={styles.label}>Gasto Familiar Mensual (S/)</label>
-              <input type="number" style={styles.input} value={gastoFamiliar} onChange={e=>setGastoFamiliar(e.target.value)} placeholder="Ej: 800" />
-            </div>
+            <div style={styles.field}><label style={styles.label}>Ingreso Neto Mensual (S/)</label><input type="number" style={styles.input} value={ingresoNeto} onChange={e=>setIngresoNeto(e.target.value)} placeholder="Ej: 2500"/></div>
+            <div style={styles.field}><label style={styles.label}>Gasto Familiar Mensual (S/)</label><input type="number" style={styles.input} value={gastoFamiliar} onChange={e=>setGastoFamiliar(e.target.value)} placeholder="Ej: 800"/></div>
             <div style={styles.modalBtns}>
               <button style={styles.btnCancel} onClick={()=>setEvalModal(null)}>Cancelar</button>
               <button style={styles.btnEval} onClick={handleEvaluar} disabled={!ingresoNeto||!gastoFamiliar}>Calcular RDS y Score</button>
@@ -593,22 +676,16 @@ export default function Core() {
           </div>
         </div>
       )}
-
       {renderHistorialModal()}
       {renderInformeModal()}
       {renderGestionModal()}
-
       <nav style={styles.nav}>
         <div style={styles.navLeft}>
           <div style={styles.logo}>CM</div>
-          <div>
-            <div style={styles.logoName}>CMAC Maynas</div>
-            <div style={styles.logoSub}>Core Bancario — Panel del Asesor</div>
-          </div>
+          <div><div style={styles.logoName}>CMAC Maynas</div><div style={styles.logoSub}>Core Bancario — Panel del Asesor</div></div>
         </div>
-        <button style={styles.btnVolver} onClick={()=>window.location.href="/dashboard"}>← Dashboard</button>
+        <button style={styles.btnVolver} onClick={()=>window.location.href="/dashboard"}>Dashboard</button>
       </nav>
-
       <div style={styles.tabsBar}>
         {TABS.map(t=>(
           <button key={t.key} style={{...styles.tabBtn,...(vista===t.key?styles.tabBtnActive:{})}} onClick={()=>setVista(t.key)}>
@@ -616,32 +693,31 @@ export default function Core() {
           </button>
         ))}
       </div>
-
       <div style={styles.content}>{renderContenido()}</div>
     </div>
   );
 }
 
 const styles = {
-  page:{minHeight:"100vh",background:"#f8f9ff",fontFamily:"'Segoe UI', sans-serif"},
+  page:{minHeight:"100vh",background:"#f8f9ff",fontFamily:"'Segoe UI',sans-serif"},
   nav:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 48px",background:"#fff",boxShadow:"0 1px 0 #e5e7eb"},
   navLeft:{display:"flex",alignItems:"center",gap:12},
-  logo:{background:"linear-gradient(135deg, #1e3a5f, #0ea5e9)",color:"#fff",fontWeight:800,fontSize:18,borderRadius:10,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center"},
+  logo:{background:"linear-gradient(135deg,#1e3a5f,#0ea5e9)",color:"#fff",fontWeight:800,fontSize:18,borderRadius:10,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center"},
   logoName:{fontWeight:700,fontSize:16,color:"#1e3a5f"},
   logoSub:{fontSize:11,color:"#64748b"},
-  btnVolver:{background:"linear-gradient(135deg, #1e3a5f, #0ea5e9)",color:"#fff",border:"none",borderRadius:10,padding:"10px 20px",cursor:"pointer",fontSize:14,fontWeight:600},
+  btnVolver:{background:"linear-gradient(135deg,#1e3a5f,#0ea5e9)",color:"#fff",border:"none",borderRadius:10,padding:"10px 20px",cursor:"pointer",fontSize:14,fontWeight:600},
   tabsBar:{display:"flex",gap:8,padding:"16px 48px",background:"#fff",borderBottom:"1px solid #f1f5f9",flexWrap:"wrap"},
   tabBtn:{padding:"10px 18px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",cursor:"pointer",fontSize:13,fontWeight:600,color:"#64748b"},
-  tabBtnActive:{background:"linear-gradient(135deg, #1e3a5f, #0ea5e9)",color:"#fff",borderColor:"transparent"},
+  tabBtnActive:{background:"linear-gradient(135deg,#1e3a5f,#0ea5e9)",color:"#fff",borderColor:"transparent"},
   content:{padding:"28px 48px"},
-  kpiRow:{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:16,marginBottom:24},
+  kpiRow:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24},
   kpiCard:{background:"#fff",borderRadius:14,padding:20,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"},
   kpiIcon:{width:40,height:40,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,marginBottom:12},
   kpiValue:{fontSize:26,fontWeight:800,color:"#0f172a"},
   kpiLabel:{fontSize:12,color:"#64748b",marginTop:2},
   filtros:{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"},
   filtroBtn:{padding:"6px 14px",borderRadius:20,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:12,fontWeight:500,color:"#64748b"},
-  filtroActivo:{background:"linear-gradient(135deg, #1e3a5f, #0ea5e9)",color:"#fff",borderColor:"transparent"},
+  filtroActivo:{background:"linear-gradient(135deg,#1e3a5f,#0ea5e9)",color:"#fff",borderColor:"transparent"},
   tableCard:{background:"#fff",borderRadius:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",overflow:"hidden"},
   tableHeader:{padding:"16px 20px 0"},
   tableTitle:{fontSize:15,fontWeight:700,color:"#0f172a"},
@@ -668,5 +744,5 @@ const styles = {
   input:{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid #e2e8f0",fontSize:14},
   modalBtns:{display:"flex",gap:10,marginTop:8},
   btnCancel:{flex:1,padding:"11px 0",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:14},
-  btnEval:{flex:1,padding:"11px 0",borderRadius:8,border:"none",background:"linear-gradient(135deg, #1e3a5f, #0ea5e9)",color:"#fff",cursor:"pointer",fontSize:14,fontWeight:600},
+  btnEval:{flex:1,padding:"11px 0",borderRadius:8,border:"none",background:"linear-gradient(135deg,#1e3a5f,#0ea5e9)",color:"#fff",cursor:"pointer",fontSize:14,fontWeight:600},
 };
