@@ -3,10 +3,10 @@ const router = express.Router();
 const controller = require('../controllers/creditoController');
 const { verificarToken, soloRol } = require('../middleware/authMiddleware');
 
-router.post('/solicitar', verificarToken, soloRol('cliente'), controller.crearSolicitud);
+router.post('/solicitar',       verificarToken, soloRol('cliente'), controller.crearSolicitud);
 router.get('/solicitudes/:userId', verificarToken, controller.obtenerSolicitudes);
-router.get('/todas', verificarToken, soloRol('asesor', 'admin', 'comite'), controller.obtenerTodasSolicitudes);
-router.post('/estado', verificarToken, soloRol('asesor', 'admin', 'comite'), controller.actualizarEstado);
-router.post('/evaluacion', verificarToken, soloRol('asesor', 'admin'), controller.registrarEvaluacion);
+router.get('/todas',            verificarToken, soloRol('asesor','admin','comite','riesgos','gerencia'), controller.obtenerTodasSolicitudes);
+router.post('/estado',          verificarToken, soloRol('asesor','admin','comite','gerencia'), controller.actualizarEstado);
+router.post('/evaluacion',      verificarToken, soloRol('asesor','admin','riesgos'), controller.registrarEvaluacion);
 
 module.exports = router;
