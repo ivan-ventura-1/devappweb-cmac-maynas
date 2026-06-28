@@ -16,9 +16,31 @@ const calcularNivelAprobacion = (monto) => {
 };
 
 exports.crearSolicitud = async (userId, monto, plazoMeses, tipoCredito) => {
+  // C2 FIX: Verificacion de sujeto de credito
+  // 1) Verificar si tiene creditos en mora
+  const { data: enMora } = await supabaseAdmin
+    .from('mora_creditos')
+    .select('id, banda')
+    .eq('user_id', userId)
+    .in('banda', ['judicial', 'castigo']);
+
+  if (enMora && enMora.length > 0)
+    throw new Error('Cliente no elegible: tiene creditos en banda judicial o castigo');
+
+  // 2) Verificar si ya tiene una solicitud pendiente o en evaluacion
+  const { data: pendientes } = await supabaseAdmin
+    .from('solicitudes_prestamo')
+    .select('id, estado')
+    .eq('user_id', userId)
+    .in('estado', ['pendiente', 'en_evaluacion', 'aprobado_scoring', 'en_comite', 'aprobado']);
+
+  if (pendientes && pendientes.length > 0)
+    throw new Error('Cliente ya tiene una solicitud activa en proceso');
+
   const tasaAnual = tipoCredito === 'empresarial' ? 43.92 : 40.92;
   const cuotaMensual = calcularCuota(monto, plazoMeses, tasaAnual);
   const nivel = calcularNivelAprobacion(monto);
+
   const { data, error } = await supabaseAdmin
     .from('solicitudes_prestamo')
     .insert([{
@@ -67,17 +89,15 @@ exports.actualizarEstado = async (solicitudId, estado, motivo) => {
 
   const solicitud = data[0];
 
-  // C1 FIX: Al desembolsar, registrar movimiento automatico y actualizar saldo ahorro
+  // C1 FIX: Al desembolsar registrar movimiento y actualizar saldo ahorro
   if (estado === 'desembolsado' && solicitud) {
-    // 1) Registrar movimiento tipo credito
     await supabaseAdmin.from('movimientos').insert([{
       user_id: solicitud.user_id,
       tipo: 'credito',
       monto: solicitud.monto,
-      descripcion: `Desembolso de credito aprobado — S/ ${solicitud.monto} a ${solicitud.plazo_meses} meses`
+      descripcion: `Desembolso de credito — S/ ${solicitud.monto} a ${solicitud.plazo_meses} meses`
     }]);
 
-    // 2) Actualizar saldo de cuenta de ahorro (sumar el monto desembolsado)
     const { data: cuenta } = await supabaseAdmin
       .from('cuentas_ahorro')
       .select('id, saldo')
@@ -109,7 +129,7 @@ exports.registrarEvaluacion = async (solicitudId, ingresoNeto, gastoFamiliar) =>
   score = Math.round(score);
 
   const capacidadOk = sol.cuota_mensual <= (ingresoDisponible * 0.4);
-  let nuevoEstado = 'en_evaluacion';
+  let nuevoEstado;
   if (!capacidadOk || rds > 40) {
     nuevoEstado = 'rechazado_automatico';
   } else if (score >= 60) {
@@ -131,4 +151,38 @@ exports.registrarEvaluacion = async (solicitudId, ingresoNeto, gastoFamiliar) =>
     .select();
   if (error) throw new Error(error.message);
   return data[0];
+};
+
+// C2 FIX: Verificar elegibilidad del sujeto de credito
+exports.verificarElegibilidad = async (userId) => {
+  const { data: enMora } = await supabaseAdmin
+    .from('mora_creditos')
+    .select('id, banda, dias_mora')
+    .eq('user_id', userId);
+
+  const { data: historial } = await supabaseAdmin
+    .from('solicitudes_prestamo')
+    .select('id, estado, monto')
+    .eq('user_id', userId);
+
+  const creditosActivos = historial?.filter(s =>
+    ['desembolsado','aprobado','en_comite','aprobado_scoring'].includes(s.estado)
+  ) || [];
+
+  const enMoraGrave = enMora?.filter(m =>
+    ['judicial','castigo'].includes(m.banda)
+  ) || [];
+
+  return {
+    elegible: enMoraGrave.length === 0,
+    creditosActivos: creditosActivos.length,
+    enMora: enMora?.length || 0,
+    enMoraGrave: enMoraGrave.length,
+    historialSolicitudes: historial?.length || 0,
+    observacion: enMoraGrave.length > 0
+      ? 'No elegible: creditos en banda judicial o castigo'
+      : creditosActivos.length > 0
+        ? 'Tiene creditos activos vigentes'
+        : 'Cliente elegible para nuevo credito'
+  };
 };
