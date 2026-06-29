@@ -163,7 +163,7 @@ export default function Dashboard() {
           <input type="number" style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1.5px solid #e2e8f0",fontSize:14}} value={montoDeposito} onChange={(e)=>setMontoDeposito(e.target.value)} placeholder="Ej: 100"/>
         </div>
         <div style={{display:"flex",gap:10}}>
-          <button style={{flex:1,padding:"11px 0",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:14}} onClick={()=>setDepositoModal(false)}>Cancelar</button>
+          <button style={{flex:1,padding:"11px 0",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",fontSize:14,color:"#374151"}} onClick={()=>setDepositoModal(false)}>Cancelar</button>
           <button style={{flex:1,padding:"11px 0",borderRadius:8,border:"none",background:"linear-gradient(135deg,#1e3a5f,#0ea5e9)",color:"#fff",cursor:"pointer",fontSize:14,fontWeight:600}} onClick={handleDeposito} disabled={!montoDeposito}>Depositar</button>
         </div>
       </div>
