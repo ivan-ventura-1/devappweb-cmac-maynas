@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const bandaConfig = {
   preventiva: { color: "#059669", bg: "#ecfdf5", icon: "🟢", label: "Preventiva" },
@@ -50,18 +50,18 @@ export default function Core() {
   const cargar = () => {
     const token = localStorage.getItem("token");
     if (!token) { window.location.href = "/"; return; }
-    fetch("http://localhost:3000/api/credito/todas", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL}/api/credito/todas`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => { setSolicitudes(d.data || []); setLoading(false); }).catch(() => setLoading(false));
-    fetch("http://localhost:3000/api/ahorro/todas", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL}/api/ahorro/todas`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => setCuentas(d.data || [])).catch(() => {});
-    fetch("http://localhost:3000/api/mora/", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL}/api/mora/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => setMora(d.data || [])).catch(() => {});
   };
 
   const handleEstado = async (solicitudId, estado) => {
     const motivo = estado === "rechazado" ? prompt("Motivo de rechazo:") : null;
     const token = localStorage.getItem("token");
-    await fetch("http://localhost:3000/api/credito/estado", {
+    await fetch(`${import.meta.env.VITE_API_URL}/api/credito/estado`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ solicitudId, estado, motivo })
     });
@@ -70,7 +70,7 @@ export default function Core() {
 
   const handleEvaluar = async () => {
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:3000/api/credito/evaluacion", {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/credito/evaluacion`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ solicitudId: evalModal.id, ingresoNeto: parseFloat(ingresoNeto), gastoFamiliar: parseFloat(gastoFamiliar) })
     });
@@ -83,7 +83,7 @@ export default function Core() {
     setGuardandoGestion(true);
     const token = localStorage.getItem("token");
     try {
-      await fetch("http://localhost:3000/api/mora/gestion", {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/mora/gestion`, {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ moraId: gestionModal.id, observacion: obsGestion })
       });
@@ -161,7 +161,6 @@ export default function Core() {
     const ratiMora = totalMonto > 0 ? (montoMora / totalMonto * 100) : 0;
     const totalAhorros = cuentas.reduce((a,c) => a + Number(c.saldo), 0);
 
-    // Datos para grafico de barras por estado
     const estadosBar = [
       { label:"Desembolsado", count:desembolsadas.length, monto:montoDesembolsado, color:"#1e3a5f" },
       { label:"En Comite",    count:enComite.length,      monto:enComite.reduce((a,s)=>a+Number(s.monto),0), color:"#7c3aed" },
@@ -171,7 +170,6 @@ export default function Core() {
     ];
     const maxMonto = Math.max(...estadosBar.map(e=>e.monto), 1);
 
-    // Datos mora por banda
     const moraBar = Object.entries(bandaConfig).map(([b,cfg]) => ({
       label: cfg.label,
       count: mora.filter(m=>m.banda===b).length,
@@ -180,7 +178,6 @@ export default function Core() {
     }));
     const maxMoraMonto = Math.max(...moraBar.map(e=>e.monto), 1);
 
-    // Score distribution
     const scoreRanges = [
       { label:"90-100", count:solicitudes.filter(s=>s.score>=90).length, color:"#059669" },
       { label:"70-89",  count:solicitudes.filter(s=>s.score>=70&&s.score<90).length, color:"#0ea5e9" },
@@ -191,7 +188,6 @@ export default function Core() {
 
     return (
       <div>
-        {/* Header */}
         <div style={{background:"linear-gradient(135deg,#0f172a,#1e3a5f)",borderRadius:16,padding:"24px 28px",marginBottom:24,color:"#fff"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
@@ -205,7 +201,6 @@ export default function Core() {
           </div>
         </div>
 
-        {/* KPIs principales */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:14,marginBottom:24}}>
           {[
             { label:"Cartera Total", value:`S/ ${(totalMonto/1000).toFixed(1)}k`, sub:`${solicitudes.length} solicitudes`, color:"#1e3a5f", icon:"💼" },
@@ -224,7 +219,6 @@ export default function Core() {
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
-          {/* Grafico cartera por estado */}
           <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
             <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Cartera por Estado</div>
             <div style={{fontSize:12,color:"#64748b",marginBottom:20}}>Distribucion de solicitudes por flujo de aprobacion</div>
@@ -241,7 +235,6 @@ export default function Core() {
             ))}
           </div>
 
-          {/* Grafico mora por banda */}
           <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
             <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Analisis de Mora</div>
             <div style={{fontSize:12,color:"#64748b",marginBottom:20}}>Cartera vencida por banda de mora</div>
@@ -260,7 +253,6 @@ export default function Core() {
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20,marginBottom:20}}>
-          {/* Distribucion de score */}
           <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
             <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Score Crediticio</div>
             <div style={{fontSize:12,color:"#64748b",marginBottom:20}}>Distribucion por rango de score</div>
@@ -285,7 +277,6 @@ export default function Core() {
             </div>
           </div>
 
-          {/* Captaciones */}
           <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
             <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Captaciones</div>
             <div style={{fontSize:12,color:"#64748b",marginBottom:20}}>Cuentas de ahorro activas</div>
@@ -313,7 +304,6 @@ export default function Core() {
             </div>
           </div>
 
-          {/* Resumen ejecutivo */}
           <div style={{background:"linear-gradient(135deg,#0f172a,#1e3a5f)",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",color:"#fff"}}>
             <div style={{fontSize:14,fontWeight:700,marginBottom:4}}>Resumen Ejecutivo</div>
             <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginBottom:20}}>KPIs clave del sistema</div>
@@ -332,7 +322,6 @@ export default function Core() {
           </div>
         </div>
 
-        {/* Tabla detalle RDS */}
         <div style={{background:"#fff",borderRadius:16,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
           <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:4}}>Detalle de Cartera Evaluada</div>
           <div style={{fontSize:12,color:"#64748b",marginBottom:16}}>Solicitudes con scoring completado</div>
