@@ -18,7 +18,7 @@ export default function Movimientos() {
     if (!token || !u) { window.location.href = "/"; return; }
     let userId;
     try { userId = JSON.parse(u).id || "a8e4b064-ca59-464e-9f69-baa40e1a529f"; } catch(e) { userId = "a8e4b064-ca59-464e-9f69-baa40e1a529f"; }
-    fetch("http://localhost:3000/api/movimientos/" + userId, {
+    fetch(`${import.meta.env.VITE_API_URL}/api/movimientos/${userId}`, {
       headers: { Authorization: "Bearer " + token }
     })
       .then(r => r.json())
