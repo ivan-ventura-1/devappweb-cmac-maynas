@@ -50,7 +50,8 @@ exports.crearSolicitud = async (userId, monto, plazoMeses, tipoCredito) => {
       tasa_anual: tasaAnual,
       cuota_mensual: Math.round(cuotaMensual * 100) / 100,
       estado: 'pendiente',
-      nivel_aprobacion: nivel
+      nivel_aprobacion: nivel,
+      tipo_credito: tipoCredito
     }])
     .select();
   if (error) throw new Error(error.message);
