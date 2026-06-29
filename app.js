@@ -13,12 +13,18 @@ const app = express();
 
 // Lab 5 FIX: CORS restringido a origenes propios
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://devappweb-cmac-maynas.vercel.app',
-    'https://cmacmaynas.netlify.app'
-  ],
+  origin: function (origin, callback) {
+    const allowed = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://devappweb-cmac-maynas.vercel.app',
+    ];
+    if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
   allowedHeaders: ['Authorization','Content-Type'],
   credentials: true
