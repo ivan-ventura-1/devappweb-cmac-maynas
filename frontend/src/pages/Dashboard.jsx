@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import ModalSolicitud from "../components/ModalSolicitud";
 
 export default function Dashboard() {
@@ -43,13 +43,13 @@ export default function Dashboard() {
   }, []);
 
   const cargarMovimientos = (uid, token) => {
-    fetch(`http://localhost:3000/api/movimientos/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL}/api/movimientos/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => { if (d.success) setMovimientos(d.data || []); }).catch(() => {});
   };
 
   const handleDeposito = async () => {
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:3000/api/ahorro/depositar", {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/ahorro/depositar`, {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ userId, monto: parseFloat(montoDeposito) })
     });
@@ -58,12 +58,12 @@ export default function Dashboard() {
   };
 
   const cargarAhorro = (uid, token) => {
-    fetch(`http://localhost:3000/api/ahorro/cuenta/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL}/api/ahorro/cuenta/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => { if (d.success) setCuentaAhorro(d.data); }).catch(() => {});
   };
 
   const cargarSolicitudes = (uid, token) => {
-    fetch(`http://localhost:3000/api/credito/solicitudes/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${import.meta.env.VITE_API_URL}/api/credito/solicitudes/${uid}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => { if (d.success) setSolicitudes(d.data || []); }).catch(() => {});
   };
 
