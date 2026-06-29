@@ -16,7 +16,7 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://localhost:3000',
-    'https://cmac-maynas.vercel.app',
+    'https://devappweb-cmac-maynas.vercel.app',
     'https://cmacmaynas.netlify.app'
   ],
   methods: ['GET','POST','PUT','DELETE','OPTIONS'],
