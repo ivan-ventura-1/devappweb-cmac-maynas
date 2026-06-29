@@ -266,7 +266,7 @@ export default function Dashboard() {
           <div style={styles.btnRow}>
             <button style={styles.btnPrimary} onClick={()=>setModalOpen(true)}>+ Nueva Solicitud</button>
             <button style={{...styles.btnSecondary,borderColor:"#059669",color:"#059669"}} onClick={()=>setDepositoModal(true)}>+ Depositar Ahorro</button>
-            <button style={styles.btnSecondary} onClick={()=>window.location.href="/mora"}>Ver Mora</button>
+            
             <button style={{...styles.btnSecondary,borderColor:"#8b5cf6",color:"#8b5cf6"}} onClick={()=>window.location.href="/movimientos"}>Ver Movimientos</button>
           </div>
         </div>
