@@ -6,7 +6,7 @@ import Footer from "../components/Footer";
 import { useState } from "react";
 
 export default function Home() {
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(true);
   return (
     <div style={{ fontFamily: "'Segoe UI', sans-serif", background: "#f8f9ff" }}>
       <Navbar onLogin={() => setModalOpen(true)} />
