@@ -81,6 +81,6 @@ const styles = {
   label: { fontSize: 14, fontWeight: 500, color: "#444" },
   input: { padding: "10px 14px", borderRadius: 8, border: "1.5px solid #ddd", fontSize: 15 },
   btnRow: { display: "flex", gap: 12, marginTop: 8 },
-  btnCancelar: { flex: 1, padding: "12px 0", borderRadius: 8, border: "1.5px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 15 },
+  btnCancelar: { flex: 1, padding: "12px 0", borderRadius: 8, border: "1.5px solid #ddd", background: "#fff", cursor: "pointer", fontSize: 15, color:"#374151" },
   btnEnviar: { flex: 1, padding: "12px 0", borderRadius: 8, border: "none", background: "#2d6a2d", color: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 600 },
 };
